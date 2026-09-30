@@ -1,0 +1,20 @@
+# SteamCMD + game server binaries (re-created by scripts/install.ps1)
+/server/
+/steamcmd/
+
+# Runtime output inside each instance's save dir
+instances/*/logs/
+instances/*/*.log
+instances/*/*.tmp
+instances/*/~Lock
+instances/*/telemetry/
+
+# Generated each start from server_config.template.scnf + password.local
+instances/*/server_config.scnf
+
+# Local secrets / overrides
+*.local
+.env
+
+# Runtime roles/bans (created from server_privilege.template.sprv + admins.local)
+instances/*/server_privilege.sprv
