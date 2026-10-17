@@ -8,4 +8,5 @@ New-Item -ItemType Directory -Force $dir | Out-Null
 $secure = Read-Host 'Server password' -AsSecureString
 $plain  = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure))
 [IO.File]::WriteAllText((Join-Path $dir 'password.local'), $plain, (New-Object Text.UTF8Encoding $false))
+Add-WfPasswordHistory $dir 'set-password.ps1'
 Write-Host "Saved to instances\$Instance\password.local (gitignored)."

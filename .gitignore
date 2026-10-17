@@ -12,9 +12,19 @@ instances/*/telemetry/
 # Generated each start from server_config.template.scnf + password.local
 instances/*/server_config.scnf
 
+# Generated each start from default_loop.template.becl + settings.json
+instances/*/default_loop.becl
+
+# Generated each start from server_cup_config.template.ccnl + cups\*.becl (the game reads these, from the save folder)
+instances/*/server_cup_config.ccnl
+instances/*/cups-generated/
+
 # Local secrets / overrides
 *.local
 .env
 
 # Runtime roles/bans (created from server_privilege.template.sprv + admins.local)
 instances/*/server_privilege.sprv
+
+# Safety copies made by hand while recovering files; not part of the project
+instances/*/cups-backup/

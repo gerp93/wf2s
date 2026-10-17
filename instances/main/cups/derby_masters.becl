@@ -1,0 +1,79 @@
+{
+    "events": [
+        {
+            "level": [
+                {
+                    "level id": "track06_2",
+                    "weather path": "data/property/weather/track06_1.weat",
+                    "weather intent path": "",
+                    "ai set path": "career/ai-class-all.aist",
+                    "game mode id": "deathmatch"
+                }
+            ],
+            "rules": [
+                {
+                    "laps": 3,
+                    "time limit": 5,
+                    "number of teams": 1,
+                    "max number of participants": 24,
+                    "flags": "",
+                    "collecting order": "Collecting Sequential",
+                    "car reset delay (seconds)": 2,
+                    "vehicle damage id": ""
+                }
+            ],
+            "car restriction": [],
+            "bot count": 8
+        },
+        {
+            "level": [
+                {
+                    "level id": "track07_2",
+                    "weather path": "data/property/weather/track07_2_bluesky.weat",
+                    "weather intent path": "",
+                    "ai set path": "career/ai-class-all.aist",
+                    "game mode id": "deathmatch"
+                }
+            ],
+            "rules": [
+                {
+                    "laps": 3,
+                    "time limit": 5,
+                    "number of teams": 1,
+                    "max number of participants": 24,
+                    "flags": "",
+                    "collecting order": "Collecting Sequential",
+                    "car reset delay (seconds)": 2,
+                    "vehicle damage id": ""
+                }
+            ],
+            "car restriction": [],
+            "bot count": 8
+        },
+        {
+            "level": [
+                {
+                    "level id": "track09_3",
+                    "weather path": "data/property/weather/track09_1.weat",
+                    "weather intent path": "",
+                    "ai set path": "career/ai-class-all.aist",
+                    "game mode id": "deathmatch"
+                }
+            ],
+            "rules": [
+                {
+                    "laps": 3,
+                    "time limit": 5,
+                    "number of teams": 1,
+                    "max number of participants": 24,
+                    "flags": "",
+                    "collecting order": "Collecting Sequential",
+                    "car reset delay (seconds)": 2,
+                    "vehicle damage id": ""
+                }
+            ],
+            "car restriction": [],
+            "bot count": 8
+        }
+    ]
+}

@@ -23,7 +23,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -48,7 +49,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -73,7 +75,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -98,7 +101,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -123,7 +127,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -148,7 +153,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -173,7 +179,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -198,7 +205,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -223,7 +231,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -248,7 +257,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -273,7 +283,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -298,7 +309,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -316,7 +328,7 @@
                     "time limit": 5,
                     "number of teams": 1,
                     "max number of participants": 24,
-                    "flags": "",
+                    "flags": "disable car resets | disable wrong way limiter",
                     "collecting order": "Collecting Sequential",
                     "car reset delay (seconds)": 2,
                     "vehicle damage id": ""
@@ -348,7 +360,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -373,7 +386,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -423,7 +437,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -448,7 +463,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -473,7 +489,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -498,7 +515,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -523,7 +541,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -548,7 +567,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -573,7 +593,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -598,7 +619,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -623,7 +645,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -648,7 +671,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -673,7 +697,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -698,7 +723,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -723,7 +749,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -748,7 +775,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -773,7 +801,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -798,7 +827,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -823,7 +853,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -848,7 +879,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -873,7 +905,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -898,7 +931,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -923,7 +957,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -948,7 +983,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -973,7 +1009,8 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
         },
         {
             "level": [
@@ -998,7 +1035,138 @@
                 }
             ],
             "car restriction": [],
-            "bot count": 8
+            "bot count": 8,
+            "disabled": true
+        },
+        {
+            "level": [
+                {
+                    "level id": "track08_1",
+                    "weather path": "data/property/weather/track08_1.weat",
+                    "weather intent path": "",
+                    "ai set path": "career/ai-class-all.aist",
+                    "game mode id": "bangerrace"
+                }
+            ],
+            "rules": [
+                {
+                    "laps": 6,
+                    "time limit": 3,
+                    "number of teams": 1,
+                    "max number of participants": 24,
+                    "flags": "",
+                    "collecting order": "Collecting Sequential",
+                    "car reset delay (seconds)": 2,
+                    "vehicle damage id": ""
+                }
+            ],
+            "car restriction": [],
+            "bot count": 8,
+            "disabled": true
+        },
+        {
+            "level": [
+                {
+                    "level id": "track14_1",
+                    "weather path": "data/property/weather/track14_1.weat",
+                    "weather intent path": "",
+                    "ai set path": "career/ai-class-all.aist",
+                    "game mode id": "bangerrace"
+                }
+            ],
+            "rules": [
+                {
+                    "laps": 6,
+                    "time limit": 3,
+                    "number of teams": 1,
+                    "max number of participants": 24,
+                    "flags": "",
+                    "collecting order": "Collecting Sequential",
+                    "car reset delay (seconds)": 2,
+                    "vehicle damage id": ""
+                }
+            ],
+            "car restriction": [],
+            "bot count": 8,
+            "disabled": true
+        },
+        {
+            "level": [
+                {
+                    "level id": "track14_2",
+                    "weather path": "data/property/weather/track14_2.weat",
+                    "weather intent path": "",
+                    "ai set path": "career/ai-class-all.aist",
+                    "game mode id": "bangerrace"
+                }
+            ],
+            "rules": [
+                {
+                    "laps": 6,
+                    "time limit": 3,
+                    "number of teams": 1,
+                    "max number of participants": 24,
+                    "flags": "",
+                    "collecting order": "Collecting Sequential",
+                    "car reset delay (seconds)": 2,
+                    "vehicle damage id": ""
+                }
+            ],
+            "car restriction": [],
+            "bot count": 8,
+            "disabled": true
+        },
+        {
+            "level": [
+                {
+                    "level id": "track15_1",
+                    "weather path": "data/property/weather/track15_1.weat",
+                    "weather intent path": "",
+                    "ai set path": "career/ai-class-all.aist",
+                    "game mode id": "deathmatch"
+                }
+            ],
+            "rules": [
+                {
+                    "laps": 6,
+                    "time limit": 3,
+                    "number of teams": 1,
+                    "max number of participants": 24,
+                    "flags": "",
+                    "collecting order": "Collecting Sequential",
+                    "car reset delay (seconds)": 2,
+                    "vehicle damage id": ""
+                }
+            ],
+            "car restriction": [],
+            "bot count": 8,
+            "disabled": true
+        },
+        {
+            "level": [
+                {
+                    "level id": "track15_2",
+                    "weather path": "data/property/weather/track15_2.weat",
+                    "weather intent path": "",
+                    "ai set path": "career/ai-class-all.aist",
+                    "game mode id": "bangerrace"
+                }
+            ],
+            "rules": [
+                {
+                    "laps": 6,
+                    "time limit": 3,
+                    "number of teams": 1,
+                    "max number of participants": 24,
+                    "flags": "",
+                    "collecting order": "Collecting Sequential",
+                    "car reset delay (seconds)": 2,
+                    "vehicle damage id": ""
+                }
+            ],
+            "car restriction": [],
+            "bot count": 8,
+            "disabled": true
         }
     ]
 }

@@ -1,0 +1,204 @@
+{
+    "events": [
+        {
+            "level": [
+                {
+                    "level id": "track01_1",
+                    "weather path": "data/property/weather/track01_2.weat",
+                    "weather intent path": "",
+                    "ai set path": "career/ai-class-all.aist",
+                    "game mode id": "bangerrace"
+                }
+            ],
+            "rules": [
+                {
+                    "laps": 3,
+                    "time limit": 3,
+                    "number of teams": 1,
+                    "max number of participants": 24,
+                    "flags": "",
+                    "collecting order": "Collecting Sequential",
+                    "car reset delay (seconds)": 2,
+                    "vehicle damage id": ""
+                }
+            ],
+            "car restriction": [],
+            "bot count": 8
+        },
+        {
+            "level": [
+                {
+                    "level id": "track02_2",
+                    "weather path": "data/property/weather/sandpit_sunnymorning_1_short.weat",
+                    "weather intent path": "",
+                    "ai set path": "career/ai-class-all.aist",
+                    "game mode id": "bangerrace"
+                }
+            ],
+            "rules": [
+                {
+                    "laps": 3,
+                    "time limit": 3,
+                    "number of teams": 1,
+                    "max number of participants": 24,
+                    "flags": "",
+                    "collecting order": "Collecting Sequential",
+                    "car reset delay (seconds)": 2,
+                    "vehicle damage id": ""
+                }
+            ],
+            "car restriction": [],
+            "bot count": 8
+        },
+        {
+            "level": [
+                {
+                    "level id": "track12_2",
+                    "weather path": "data/property/weather/track12_8.weat",
+                    "weather intent path": "",
+                    "ai set path": "career/ai-class-all.aist",
+                    "game mode id": "bangerrace"
+                }
+            ],
+            "rules": [
+                {
+                    "laps": 5,
+                    "time limit": 3,
+                    "number of teams": 1,
+                    "max number of participants": 24,
+                    "flags": "",
+                    "collecting order": "Collecting Sequential",
+                    "car reset delay (seconds)": 2,
+                    "vehicle damage id": ""
+                }
+            ],
+            "car restriction": [],
+            "bot count": 8
+        },
+        {
+            "level": [
+                {
+                    "level id": "track05_1_rev",
+                    "weather path": "data/property/weather/track05_3.weat",
+                    "weather intent path": "",
+                    "ai set path": "career/ai-class-all.aist",
+                    "game mode id": "bangerrace"
+                }
+            ],
+            "rules": [
+                {
+                    "laps": 5,
+                    "time limit": 3,
+                    "number of teams": 1,
+                    "max number of participants": 24,
+                    "flags": "",
+                    "collecting order": "Collecting Sequential",
+                    "car reset delay (seconds)": 2,
+                    "vehicle damage id": ""
+                }
+            ],
+            "car restriction": [],
+            "bot count": 8
+        },
+        {
+            "level": [
+                {
+                    "level id": "track04_1",
+                    "weather path": "data/property/weather/track04_2.weat",
+                    "weather intent path": "",
+                    "ai set path": "career/ai-class-all.aist",
+                    "game mode id": "bangerrace"
+                }
+            ],
+            "rules": [
+                {
+                    "laps": 3,
+                    "time limit": 3,
+                    "number of teams": 1,
+                    "max number of participants": 24,
+                    "flags": "",
+                    "collecting order": "Collecting Sequential",
+                    "car reset delay (seconds)": 2,
+                    "vehicle damage id": ""
+                }
+            ],
+            "car restriction": [],
+            "bot count": 8
+        },
+        {
+            "level": [
+                {
+                    "level id": "track02_2_rev",
+                    "weather path": "data/property/weather/sandpit_sunnyday_1_short.weat",
+                    "weather intent path": "",
+                    "ai set path": "career/ai-class-all.aist",
+                    "game mode id": "bangerrace"
+                }
+            ],
+            "rules": [
+                {
+                    "laps": 3,
+                    "time limit": 3,
+                    "number of teams": 1,
+                    "max number of participants": 24,
+                    "flags": "",
+                    "collecting order": "Collecting Sequential",
+                    "car reset delay (seconds)": 2,
+                    "vehicle damage id": ""
+                }
+            ],
+            "car restriction": [],
+            "bot count": 8
+        },
+        {
+            "level": [
+                {
+                    "level id": "track05_1",
+                    "weather path": "data/property/weather/track05_3.weat",
+                    "weather intent path": "",
+                    "ai set path": "career/ai-class-all.aist",
+                    "game mode id": "bangerrace"
+                }
+            ],
+            "rules": [
+                {
+                    "laps": 5,
+                    "time limit": 3,
+                    "number of teams": 1,
+                    "max number of participants": 24,
+                    "flags": "",
+                    "collecting order": "Collecting Sequential",
+                    "car reset delay (seconds)": 2,
+                    "vehicle damage id": ""
+                }
+            ],
+            "car restriction": [],
+            "bot count": 8
+        },
+        {
+            "level": [
+                {
+                    "level id": "track12_1",
+                    "weather path": "data/property/weather/track12_7_cloudy.weat",
+                    "weather intent path": "",
+                    "ai set path": "career/ai-class-all.aist",
+                    "game mode id": "bangerrace"
+                }
+            ],
+            "rules": [
+                {
+                    "laps": 5,
+                    "time limit": 3,
+                    "number of teams": 1,
+                    "max number of participants": 24,
+                    "flags": "",
+                    "collecting order": "Collecting Sequential",
+                    "car reset delay (seconds)": 2,
+                    "vehicle damage id": ""
+                }
+            ],
+            "car restriction": [],
+            "bot count": 8
+        }
+    ]
+}
