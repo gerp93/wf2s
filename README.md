@@ -1,74 +1,118 @@
 # wf2s: Wreckfest 2 dedicated server
 
-Config-as-code for a Windows-hosted Wreckfest 2 dedicated server (Steam app **3519390**).
-Game binaries are not committed; the config, event rotations and setup scripts are, so the
-whole server can be rebuilt on another machine in a few minutes.
+Host your own **Wreckfest 2** dedicated server on a Windows PC, set up and run from a page in your browser: server name and
+password, the track rotation, cups, bots and rules, start/stop, and help with the router. Plain PowerShell, nothing to install
+beyond a Steam account that owns Wreckfest 2.
 
-- Secrets (server password, admin SteamIDs) stay on the host and are injected at start time.
-- Everything is plain PowerShell, with no dependencies beyond Windows and a Steam account that owns Wreckfest 2.
+Licensed under the [AGPL-3.0](LICENSE). Game files are never part of this project; they are downloaded from Steam on your PC.
 
-## Requirements
+## Quick start (no technical knowledge needed)
+
+You need: a Windows 10 or 11 PC, a Steam account that **owns Wreckfest 2**, about 6 GB of free disk space, and (for friends
+outside your home) access to your router's settings.
+
+1. **Download** the latest `wf2s-<version>.zip` from the [Releases page](https://github.com/gerp93/wf2s/releases), right-click it,
+   choose **Extract All**, and open the extracted folder. (Do not run it from inside the zip.)
+2. **Double-click `Start.cmd`.** Windows may show a blue "Windows protected your PC" box because the file came from the internet:
+   click **More info**, then **Run anyway**. The program is plain text you can read in the `scripts` folder.
+3. **Answer the questions** in the window that opens:
+   - your **Steam account name** (the one you sign in with). Steam then asks for your password, and a Steam Guard code if you use
+     one, in the same window. Those go straight to Steam; this program never sees or stores them. The game server (a few GB) downloads.
+   - a **server name** (shown in the game's server list) and a **server password** that friends type to join.
+   - your **Steam ID** (optional) to become the server's admin. The window explains where to find it.
+   - Windows asks once for **permission to open the game port in its firewall**: click Yes.
+4. **Set up your router** (the one step no program can do for you, see below). Skip it if everyone plays on your home network.
+5. The **settings page** opens in your browser. Click **Start server**. After about 20 seconds the status turns green and the server is
+   in the game's multiplayer server list (search for its name; passworded servers show a lock).
+6. On the page's **Network & version** tab, check that the server says it is reachable from the internet.
+
+Next time, just double-click `Start.cmd` again: it opens the settings page straight away. Closing the window closes the page only;
+a running server keeps running in its own window.
+
+### The router step
+Friends on the internet reach you through your router, which needs two settings (the page's **Network & version** tab shows the
+exact numbers for your PC):
+
+1. **A fixed address for this PC.** Look for *DHCP reservation* or *static lease* in the router and reserve this PC's address.
+   Otherwise the router may give the PC a new address one day and the forward below stops working.
+2. **Port forwarding** of **UDP 30100** (external and internal) to that address. Some routers call it *virtual server*.
+
+Every router has different menus: search for your router's model name plus "port forwarding". Forward only that one port, and avoid
+DMZ. If your router's internet address starts with `10.`, `192.168.`, `172.16`-`172.31` or `100.64`-`100.127`, your provider shares one
+address between customers (CGNAT) and no port forward can work; you would need a public address from the provider, or to host elsewhere.
+
+### What can go wrong
+- **"Failed to install app 3519390 (Missing configuration)"**: that account does not own Wreckfest 2, or the login failed. Run
+  `Start.cmd` again to retry.
+- **Players are refused with a version or "300E checksum mismatch" error**: their game and your server are on different versions.
+  Use **Update server** on the Network & version tab. Never add files to the server's `data` folder.
+- **Friends time out**: see the checklist the page shows under "Is it working?". Playing from the host PC through your own public
+  address often fails because many routers cannot loop back; join from the in-game server list instead.
+- **Nothing happens when I double-click `Start.cmd`**: make sure you extracted the zip, and that antivirus did not quarantine it.
+
+## For people who want to go further
+
+### Requirements
 - Windows 10/11 and PowerShell 5.1+
 - A Steam account that **owns Wreckfest 2**. Anonymous SteamCMD login is refused for this app
-  ("Missing configuration"), so `install.ps1` needs `-SteamUser`.
-- For friends over the internet: UDP **30100** forwarded on your router to the host PC
-  (see [Networking](#networking)).
+  ("Missing configuration"), so installing needs a Steam account name (`-SteamUser`, or the first-run setup asks).
+- For friends over the internet: UDP **30100** forwarded on your router to the host PC (see [Networking](#networking)).
 
-## Quick start
+### Install from git instead of the zip
 ```powershell
 git clone https://github.com/gerp93/wf2s.git ; cd wf2s
-
-# 1. Install SteamCMD + the dedicated server into ./server (prompts for Steam password / Steam Guard)
-.\scripts\install.ps1 -SteamUser YOUR_STEAM_USERNAME
-
-# 2. Set the server password (stored in instances\main\password.local, gitignored)
-.\scripts\set-password.ps1
-
-# 3. Make yourself admin: put your SteamID64 in instances\main\admins.local (one per line, gitignored)
-
-# 4. Open the game port in Windows Firewall (elevated PowerShell, once)
-.\scripts\firewall.ps1
-
-# 5. Run it
-.\scripts\start.ps1 -Instance main
+.\Start.cmd          # or: powershell -ExecutionPolicy Bypass -File scripts\launch.ps1
 ```
-The server then appears in the game's multiplayer server browser (search by name). A password-protected
-server shows a lock icon.
+That is the same first-run setup as the zip. To do the steps by hand: `.\scripts\install.ps1 -SteamUser NAME`,
+`.\scripts\set-password.ps1`, put your SteamID64 in `instances\main\admins.local`, `.\scripts\firewall.ps1` (elevated),
+`.\scripts\start.ps1 -Instance main`. A server needs `instances\main` to exist first: run `.\scripts\setup.ps1`, or any script that
+creates it from `defaults\instance`.
 
 ## Scripts
 | Script | What it does |
 |---|---|
-| `scripts/install.ps1 [-SteamUser name]` | Downloads SteamCMD if missing, installs or updates the server into `./server`. |
-| `scripts/update.ps1` | Re-runs the install to pick up game patches. Stop the server first. |
+| `Start.cmd` | Double-click launcher: runs `scripts\launch.ps1` with `-ExecutionPolicy Bypass`. |
+| `scripts/launch.ps1 [-Instance name] [-Port 30180]` | Runs `setup.ps1` if anything is missing, then runs the settings page and opens it in the browser. |
+| `scripts/setup.ps1 [-Instance name]` | First-run wizard (PC check, game download, name/password/admin, firewall, router help). Safe to re-run: finished steps are skipped and an existing server is only changed if you type new answers. |
+| `scripts/install.ps1 [-SteamUser name]` | Downloads SteamCMD if missing, installs or updates the server into `./server`. Remembers the Steam account name (not the password) in `steam-user.local`. |
+| `scripts/update.ps1` | Re-runs the install to pick up game patches. Stop the server first (the page's Update button does that). |
 | `scripts/set-password.ps1 [-Instance name]` | Prompts for the password and writes `password.local`. |
-| `scripts/start.ps1 [-Instance name] [-Local]` | Generates local config files if needed, then launches the server with `--save-dir instances\<name>`. `-Local` starts the game's local-only mode (`--local-server`) instead of the online one; it is for testing. |
-| `scripts/firewall.ps1 [-Ports 30100,...]` | Adds inbound UDP allow rules. Run elevated. |
-| `scripts/ui.ps1 [-Instance name] [-Port 30180]` | Local settings page (bots, damage, laps, server name, ...) at `http://127.0.0.1:30180`. See [Settings page](#settings-page). |
-| `scripts/console.ps1 -ProcessId <pid> [-Send 'cmd'] [-Read n]` | Types commands into a running server's console and prints its screen. Used by "Apply now". |
+| `scripts/start.ps1 [-Instance name] [-Local]` | Creates the instance from `defaults\instance` if it does not exist, generates the config files, then launches the server with `--save-dir instances\<name>`. `-Local` starts the game's local-only mode (`--local-server`) instead of the online one; it is for testing. |
+| `scripts/firewall.ps1 [-Ports 30100,...]` | Adds inbound UDP allow rules (skips ports that already have one). Run elevated; `setup.ps1` does that for you. |
+| `scripts/ui.ps1 [-Instance name] [-Port 30180] [-OpenBrowser]` | Local settings page at `http://127.0.0.1:30180`. See [Settings page](#settings-page). |
+| `scripts/console.ps1 -ProcessId <pid> [-Send 'cmd'] [-Read n]` | Types commands into a running server's console and prints its screen. Used by "Apply now" and the Network tab. |
 | `scripts/game-data-report.ps1` | Re-reads the game facts the page relies on (names, lists, flags, limits) from the installed game. See [docs/game-data-sources.md](docs/game-data-sources.md). |
+| `scripts/test.ps1` | Automated checks (script syntax, defaults, setup, generators, the page's API, packaging). Needs no game and no Steam account. CI runs it. |
+| `scripts/package.ps1 [-Version v1.2.3]` | Builds `dist\wf2s-<version>.zip` from the files tracked in git and checks that nothing personal or from the game is in it. |
 | `scripts/update-visual-assault-css.ps1 <tag>` | Re-vendors the settings page theme from a VisualAssault tag. |
 
 ## Layout
 ```
+Start.cmd                        double-click launcher
 scripts/                         setup and run scripts
-instances/<name>/                one folder per server (this is the --save-dir)
-  server_config.template.scnf    TRACKED: name, description, port, event loop, timers, ban settings
-  default_loop.template.becl     TRACKED: event rotation (tracks, modes, laps, bots, cars)
-  settings.json                  TRACKED: global overrides saved by the settings page (optional)
-  cups/<slug>.becl               TRACKED: custom cup rotations made on the Cups tab (optional)
-  server_cup_config.template.ccnl TRACKED: cup definitions and points (the page edits this one)
-  server_cup_config.ccnl         generated each start (template + cups\*.becl), gitignored: the cup list the game reads
-  cups-generated/<slug>.becl     generated each start from cups\<slug>.becl, gitignored: each custom cup's events for the game
-  server_privilege.template.sprv TRACKED: empty roles/bans skeleton
-  server_config.scnf             generated each start (template + settings.json + password.local), gitignored
-  default_loop.becl              generated each start (template + settings.json), gitignored
-  server_privilege.sprv          created once from template + admins.local; roles/bans change at runtime, gitignored
-  password.local                 server password, gitignored
-  admins.local                   admin SteamID64s, one per line, gitignored
+defaults/instance/               the clean starting point every new server is created from (tracked)
+defaults/server_cup_config.ccnl  the game's six cups as shipped ("Reset to defaults")
+defaults/known-build.json        the game build this app was last checked against
+instances/<name>/                YOUR server (this is the --save-dir). Created by setup, never tracked, never shipped
+  server_config.template.scnf    name, description, port, event loop, timers, ban settings
+  default_loop.template.becl     event rotation (tracks, modes, laps, bots, cars)
+  settings.json                  global overrides saved by the settings page (optional)
+  cups/<slug>.becl               custom cup rotations made on the Cups tab (optional)
+  server_cup_config.template.ccnl cup definitions and points (the page edits this one)
+  server_cup_config.ccnl         generated each start (template + cups\*.becl): the cup list the game reads
+  cups-generated/<slug>.becl     generated each start from cups\<slug>.becl: each custom cup's events for the game
+  server_privilege.template.sprv empty roles/bans skeleton
+  server_config.scnf             generated each start (template + settings.json + password.local)
+  default_loop.becl              generated each start (template + settings.json)
+  server_privilege.sprv          created once from template + admins.local; roles/bans change at runtime
+  password.local                 server password
+  admins.local                   admin SteamID64s, one per line
 ui/                              settings page (index.html, vendored VisualAssault theme)
-server/  steamcmd/               gitignored, recreated by install.ps1
+server/  steamcmd/               the game and SteamCMD, recreated by install.ps1 (not tracked)
+steam-user.local                 your Steam account name (not tracked)
 ```
-Edit the **template** files, not the generated ones. They are JSON despite the `.scnf`/`.becl` extensions.
+Everything under `instances/`, `server/`, `steamcmd/` and every `*.local` file is gitignored and left out of the release zip.
+Edit the **template** files (or use the page), not the generated ones. They are JSON despite the `.scnf`/`.becl` extensions.
 
 ## Configuration
 - **Name, description, port, timers:** `server_config.template.scnf`. Changes take effect on the next start.
@@ -89,9 +133,9 @@ Edit the **template** files, not the generated ones. They are JSON despite the `
 ```powershell
 .\scripts\ui.ps1        # then open http://127.0.0.1:30180
 ```
-A local page (PowerShell only, no extra dependencies) with three tabs. The server does not need to be stopped to edit,
-but changes apply the **next time it starts**. The page does not start or stop the server; it shows whether
-`Wreckfest2.exe` is running.
+A local page (PowerShell only, no extra dependencies) with five tabs: Global defaults, Rotation, Cups, Password and Network & version.
+The server does not need to be stopped to edit; changes apply the **next time it starts**, or right away with **Apply now**.
+The header shows whether this instance's `Wreckfest2.exe` is running and can start and stop it (see below).
 
 - **Rotation:** every track the game ships is listed, with its friendly name ("Crash Canyon - Waypoint Race") read from
   the game's files. The track itself is fixed. Each row has an **On** checkbox: untick it to skip that track without
@@ -198,6 +242,23 @@ Things to know:
   running server, and what is still unknown): [docs/game-data-sources.md](docs/game-data-sources.md). Re-read it from the
   installed game with `.\scripts\game-data-report.ps1`.
 
+### Network & version tab
+- **Letting friends join:** this PC's local address, the router's address, the port and protocol to forward (UDP 30100, read from the
+  instance's `game port`), whether the address is fixed (DHCP) and whether the Windows Firewall rule exists. It explains in plain
+  words what a fixed address and a port forward are.
+- **Is it working?** The server tests itself shortly after it starts and prints `Server is reachable from public network.` or
+  `Server is unreachable.`, plus `Router port forwarded using UPnP. External endpoint at <ip>` or `... UPnP unavailable ...`. The
+  page reads those lines from the running server's console (the same way Apply now does) and turns them into advice, including a
+  CGNAT warning when the router reports a private address. It cannot test your router from outside by itself, and it makes no
+  requests to outside services. Before the server prints a verdict it says "no result yet"; click Refresh.
+  Tested here: the console-text parsing, with the server's exact messages (taken from the server program) as test input; the tab
+  against a running local-only server (which never prints a verdict, so only the "no result" case was seen live).
+- **Game version:** the installed Steam build id (`server\steamapps\appmanifest_3519390.acf`) against the build this app was last
+  checked against (`defaults/known-build.json`; a banner warns when they differ, because the reverse-engineered formats and string
+  tables may have changed). **Update server** stops the server after asking, then opens `scripts\update.ps1` in its own window
+  (SteamCMD may need a Steam Guard code); start the server again from the header when it finishes. It needs the Steam account name
+  that `install.ps1` saved in `steam-user.local`; the button explains this when it is missing. The update path has not been run end to end.
+
 To open it from Hardpoint, add a mount that runs `powershell scripts\ui.ps1` from this folder with the Open URL
 `http://127.0.0.1:30180`. Restart it after updating these scripts.
 
@@ -220,8 +281,12 @@ a matching forward and firewall rule. Forward only the game port, and avoid DMZ 
   under a separate low-privilege Windows account or on a separate machine.
 
 ## Updating
-Stop the server, run `.\scripts\update.ps1 -SteamUser YOUR_STEAM_USERNAME`, and start it again. Keep the
-server and client on the same version, especially during Early Access.
+**The game server:** use **Update server** on the page's Network & version tab, or stop the server, run
+`.\scripts\update.ps1` (it uses the Steam account name saved by the first install; pass `-SteamUser NAME` to change it) and start it
+again. Keep the server and client on the same version, especially during Early Access.
+
+**This app:** download the new zip and extract it over (or beside) the old folder. Your server lives in `instances\`, which the zip
+does not contain, so it is never overwritten. If you installed with git, `git pull`.
 
 ## Troubleshooting
 - **`ERROR! Failed to install app '3519390' (Missing configuration)`:** anonymous login is not allowed. Pass `-SteamUser`.

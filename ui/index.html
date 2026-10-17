@@ -113,9 +113,11 @@
   <button data-tab="rotation">Rotation</button>
   <button data-tab="cups">Cups</button>
   <button data-tab="password">Password</button>
+  <button data-tab="network">Network &amp; version</button>
 </nav>
 <main>
   <div id="notice" class="notice"></div>
+  <div id="build-banner" class="info"></div>
 
   <div id="tab-rotation" hidden>
     <p class="muted" style="margin-bottom:12px">The default event rotation, one row per event. Changes are saved to the rotation template. Use “Apply now” (top right) to push them to a running server, otherwise they apply the next time it starts.</p>
@@ -160,6 +162,37 @@
       <h2>History</h2>
       <p class="muted" style="margin-bottom:8px">When the password was changed. Only the date and where it was changed from are kept, never the password.</p>
       <div id="pwhistory"></div>
+    </section>
+  </div>
+
+  <div id="tab-network" hidden>
+    <section class="card">
+      <h2>Letting friends join</h2>
+      <p class="muted" style="margin-bottom:8px">Friends on the internet reach your server through your router. That needs two things in the router's settings, which no program can do for you:</p>
+      <ol class="muted" style="margin:0 0 12px 22px">
+        <li><b>A fixed address for this PC</b> (the router calls it a DHCP reservation or static lease). Without it the router may hand this PC a different address one day, and the forward would point at the wrong machine.</li>
+        <li><b>Port forwarding</b> of the game port to that address (the router may call it a virtual server). It tells the router: &ldquo;traffic arriving on this port belongs to this PC.&rdquo;</li>
+      </ol>
+      <div id="net-facts"></div>
+      <div class="toolbar" style="margin-top:12px; margin-bottom:0">
+        <button type="button" class="small" id="net-refresh">Refresh</button>
+        <span class="muted" id="net-when"></span>
+      </div>
+    </section>
+    <section class="card">
+      <h2>Is it working?</h2>
+      <p id="net-verdict" style="margin-bottom:8px"></p>
+      <div id="net-advice"></div>
+      <p class="muted" style="margin-top:8px">The server tests this itself a few seconds after it starts and prints the result in its window. This page only reads what the server said; it cannot test your router from outside. Playing on your own home network needs no forwarding.</p>
+    </section>
+    <section class="card">
+      <h2>Game version</h2>
+      <div id="build-facts"></div>
+      <div class="toolbar" style="margin-top:12px; margin-bottom:0">
+        <button type="button" class="small" id="build-update">Update server</button>
+        <span class="muted">Stops the server (after asking), then runs the Steam download in its own window.</span>
+      </div>
+      <p class="muted" style="margin-top:8px">Players and the server must be on the same game version, or players are refused when they join. Wreckfest 2 is in Early Access and updates often: update the server whenever the game updates.</p>
     </section>
   </div>
 </main>
@@ -776,10 +809,91 @@ function showOverrideInfo(overrides) {
     : '';
 }
 
+// ---- network help and game version ----
+const factRow = (label, value) => el('div', { style: 'display:grid; grid-template-columns: 200px 1fr; gap: 4px 12px; padding: 4px 0; border-top: 1px solid var(--color-border)' },
+  el('div', { class: 'muted', text: label }), el('div', {}, value));
+const okText = (t, good) => el('span', { text: t, style: 'color: var(--color-accent-' + (good ? 'green' : 'red') + ')' });
+
+function showBuild(b) {
+  b = b || {};
+  const banner = $('build-banner');
+  if (!b.installed) banner.textContent = 'The game server is not installed yet. Run Start.cmd again to finish the setup.';
+  else if (b.differs) banner.textContent = 'The installed game build (' + b.installed + ') is not the one this app was last checked against (' + b.known + '). It should still work, but if track names look wrong or a setting is refused, check for an app update.';
+  else banner.textContent = '';
+  $('build-facts').replaceChildren(
+    factRow('Installed build', b.installed ? el('span', { text: b.installed }) : okText('not installed', false)),
+    factRow('App last checked against', el('span', { text: b.known ? b.known + (b.knownChecked ? ' (' + b.knownChecked + ')' : '') : 'unknown' })),
+    factRow('Steam account', el('span', { text: b.steamUser || 'not saved yet' })));
+  $('build-update').disabled = !b.installed || !b.steamUser;
+  $('build-update').title = !b.steamUser ? 'No Steam account name is saved yet. Run  scripts\\install.ps1 -SteamUser YOUR_NAME  once (it also checks the install), then this button works.' : '';
+}
+
+const NET_ADVICE = {
+  unreachable: ['The server tested itself and could not be reached from the internet. Check, in this order:',
+    '1. The router forward is UDP (not TCP) and uses the port above, both external and internal.',
+    '2. It points at this PC’s current address (shown above), and that address is reserved so it cannot change.',
+    '3. Windows Firewall allows the port (the line above).',
+    '4. Your router’s own internet address is a public one. If it starts with 10., 192.168., 172.16–31. or 100.64–127., your provider shares one address between many customers (CGNAT). No setting on your side can fix that; ask the provider for a public address, or host elsewhere.']
+};
+async function loadNetwork() {
+  $('net-refresh').disabled = true; $('net-when').textContent = 'reading…';
+  try {
+    const [n, st] = await Promise.all([api('/api/network'), api('/api/state')]);
+    showBuild(st.build);
+    const L = n.local || {}, r = n.reachability || {};
+    $('net-facts').replaceChildren(
+      factRow('Forward this port', el('b', { text: n.protocol + ' ' + n.port })),
+      factRow('To this PC’s address', L.ip ? el('span', {}, el('b', { text: L.ip }), el('span', { class: 'muted', text: '  (' + (L.adapter || 'network') + ')' })) : okText('could not be read', false)),
+      factRow('Fixed address?', L.dhcp === false ? okText('Yes, set on this PC.', true)
+        : L.dhcp === true ? el('span', { text: 'The router chooses it. Reserve it in the router (DHCP reservation) so it stays ' + (L.ip || 'the same') + '.' })
+        : el('span', { class: 'muted', text: 'unknown' })),
+      factRow('Your router', L.gateway ? el('span', {}, el('a', { href: 'http://' + L.gateway, target: '_blank', rel: 'noopener', text: 'http://' + L.gateway }), el('span', { class: 'muted', text: '  (probably; sign-in is often on a sticker)' })) : el('span', { class: 'muted', text: 'unknown' })),
+      factRow('Windows Firewall', n.firewallRule === true ? okText('UDP ' + n.port + ' is open.', true)
+        : n.firewallRule === false ? okText('UDP ' + n.port + ' is NOT open. Run Start.cmd (setup) again, or run scripts\\firewall.ps1 as Administrator.', false)
+        : el('span', { class: 'muted', text: 'could not check' })));
+    const advice = [];
+    let verdict, good = false;
+    if (!r.running) verdict = 'The server is not running, so there is nothing to test yet. Start it and look here again.';
+    else if (r.error) verdict = 'Could not read the server’s window: ' + r.error;
+    else if (r.status === 'reachable') { verdict = 'Reachable. The server says players on the internet can reach it.'; good = true; }
+    else if (r.status === 'unreachable') { verdict = 'Not reachable from the internet yet.'; advice.push(...NET_ADVICE.unreachable); }
+    else verdict = 'No result yet. The server prints one a few seconds after it starts; click Refresh in a moment.';
+    if (r.running && r.upnp === true) advice.push('Your router opened the port by itself (UPnP)' + (r.endpoint ? ', as ' + r.endpoint : '') + '.');
+    if (r.running && r.upnp === false && r.status !== 'reachable') advice.push('The router did not open the port automatically (UPnP is off or unsupported). That is normal: forward the port by hand.');
+    if (r.privateEndpoint) advice.push('Warning: the address the router reported (' + r.endpoint + ') is a private one. Your provider probably shares one internet address between customers (CGNAT), so no forward can work. Ask the provider for a public address, or host elsewhere.');
+    $('net-verdict').replaceChildren(okText(verdict, good));
+    const printed = r.lines && r.lines.length ? [el('details', {}, el('summary', { class: 'muted', text: 'What the server printed' }), el('pre', { class: 'muted', text: r.lines.join('\n'), style: 'white-space:pre-wrap' }))] : [];
+    $('net-advice').replaceChildren(...advice.map(t => el('p', { class: 'muted', style: 'margin-bottom:4px', text: t })), ...printed);
+    $('net-when').textContent = 'read at ' + new Date().toLocaleTimeString();
+  } catch (e) { $('net-when').textContent = ''; notice('Could not read the network details: ' + e.message); }
+  $('net-refresh').disabled = false;
+}
+$('net-refresh').addEventListener('click', loadNetwork);
+$('build-update').addEventListener('click', async () => {
+  if (dirty.size && !confirm('You have unsaved changes on this page. They stay unsaved while the server updates. Continue?')) return;
+  const running = SERVER_RUNNING;
+  if (!confirm((running ? 'The server will be stopped and everyone connected is disconnected.\n\n' : '') + 'Open the Steam download in a new window now?\n\nSteam may ask for your password or a Steam Guard code there.')) return;
+  $('build-update').disabled = true;
+  try {
+    if (running) {
+      const s = await send('POST', '/api/server/stop', {});
+      if (s.stillRunning) {
+        if (!confirm(s.message + '\n\nForce it to stop now?')) { notice(s.message); return; }
+        await send('POST', '/api/server/stop', { force: true });
+      }
+      await pollStatus();
+    }
+    const r = await send('POST', '/api/server/update', {});
+    notice(r.message + ' Then click “Refresh” here to see the new build.', true);
+  } catch (e) { notice('Could not update: ' + e.message); }
+  finally { $('build-update').disabled = false; }
+});
+
 // ---- tabs / startup ----
 function show(tab) {
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
-  for (const t of ['rotation', 'cups', 'global', 'password']) $('tab-' + t).hidden = t !== tab;
+  for (const t of ['rotation', 'cups', 'global', 'password', 'network']) $('tab-' + t).hidden = t !== tab;
+  if (tab === 'network' && typeof loadNetwork === 'function') loadNetwork();
   if (tab !== 'password' && typeof hidePassword === 'function') hidePassword();
   try { history.replaceState(null, '', '#' + tab); } catch { /* ignore */ }
 }
@@ -805,13 +919,14 @@ async function pollStatus() { try { setStatus((await api('/api/state')).running)
     fill('dl-levels', choices.levels); fill('dl-modes', choices.modes); fill('dl-weather', choices.weather); fill('dl-ai', choices.aiSets);
     fill('dl-damage', choices.damage); fill('dl-cars', choices.cars); fill('dl-start', choices.startOrders); fill('dl-collect', choices.collectingOrders);
     fill('dl-flags', ['reverse rule']);
+    showBuild(state.build);
     buildGlobal(state); setStatus(state.running); showPasswordState(state.passwordSet); showPasswordHistory(state.passwordHistory);
     if (state.running) notice('The server is running. After you save, click “Apply now” to push changes to it live.');
     OVERRIDES = state.overrides || {};
     showOverrideInfo(OVERRIDES);
     await loopEditor('main', $('rot'));
     await cupsTab();
-    const t = location.hash.slice(1); show(['rotation', 'cups', 'global', 'password'].includes(t) ? t : 'global');   // Global overrides is the first tab and the one that opens
+    const t = location.hash.slice(1); show(['rotation', 'cups', 'global', 'password', 'network'].includes(t) ? t : 'global');   // Global overrides is the first tab and the one that opens
   } catch (e) { notice('Could not load settings: ' + e.message); }
   setInterval(pollStatus, 15000);
 })();

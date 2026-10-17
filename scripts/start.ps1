@@ -8,7 +8,8 @@ param([string]$Instance = 'main', [switch]$Local)
 . "$PSScriptRoot\common.ps1"
 . "$PSScriptRoot\settings.ps1"
 $save = Join-Path $Root "instances\$Instance"
-if (-not (Test-Path $save)) { New-Item -ItemType Directory -Force $save | Out-Null }  # must exist before first launch
+# A new instance name is created from defaults\instance (an existing instance is never changed); the folder must exist before launch.
+if (Initialize-WfInstance $Root $Instance) { Write-Host "Created instances\$Instance from the default instance." }
 
 # settings.json (edited by scripts\ui.ps1) overrides values in the templates below; see settings.ps1.
 $overrides = Read-WfOverrides $save

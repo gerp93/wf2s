@@ -1,7 +1,26 @@
 # Plan: make wf2s something a friend can set up and run
 
 Written for a **new session** to pick up cold. Read this file, then `README.md` and `docs/game-data-sources.md`.
-Last updated 2026-10-17 on branch `settings-ui`.
+Written 2026-10-17 on branch `settings-ui`; executed the same day (see Status below).
+
+## Status: executed 2026-10-17 on branch `distribution` (PR open, not merged)
+
+The work breakdown below was carried out, with these results. Things that could only be checked on a real machine are listed in
+[`TODO.md`](../TODO.md); read that before calling this finished.
+
+| Step | Result |
+|---|---|
+| 1. Clean up | `settings-ui` had already been merged (PR #1), so this is a new branch off `main`. `instances/` is untracked and gitignored; the owner's own instance stays on disk, with a hand-made backup in the gitignored `.personal-backup/`. **Merging this PR will delete the tracked `instances/main` files from the owner's working tree** (git removes files that were tracked): restore them from `.personal-backup/main` afterwards. |
+| 2. Clean default instance | `defaults/instance/` (the game's 40-event rotation plus 5 switched-off tracks, neutral name, empty roles) + the six shipped cups from `defaults/server_cup_config.ccnl`. `Initialize-WfInstance` (`scripts/instance.ps1`) copies it once and never overwrites an existing instance. `start.ps1` calls it too. |
+| 3. Launcher and setup | `Start.cmd` -> `scripts/launch.ps1` -> `scripts/setup.ps1` (PC check, SteamCMD download, name/password/Steam ID, one UAC prompt for the firewall, router checklist) -> `ui.ps1 -OpenBrowser`. Re-runnable. `install.ps1` remembers the Steam account name (not the password) and exits non-zero on failure. |
+| 4. Router help | The page's **Network & version** tab: local address, router, port, DHCP/fixed, firewall rule, and the server's own reachable/unreachable/UPnP lines read from its console, with advice and a CGNAT warning. |
+| 5. Version handling | Installed Steam build vs `defaults/known-build.json`, banner on mismatch, **Update server** button (stop, then update window). Nothing is ever written to the game's `data` folder. |
+| 6. Packaging and docs | `scripts/package.ps1` (zip of tracked files, refuses personal/game files), `.github/workflows/release.yml` (manual, tags and publishes), AGPL-3.0 `LICENSE` copied from KVG_Standards, README quick start rewritten. No screenshots. |
+| 7. Testing | `scripts/test.ps1` (55+ checks) and `.github/workflows/ci.yml`. A fresh default instance was started with the real game in local-only mode on its own port. **Not done:** clean-machine test, a real player joining, the live reachability lines, the update button end to end, the SteamCMD download. |
+
+Decisions taken (the owner can reverse any of them): 1 = `Start.cmd` launcher; 2 = could not be checked here, so SteamCMD stays;
+3 = ask for it in setup (profile link or 17-digit ID; vanity links are refused because they need Steam's web API); 4 = GitHub release
+zip (manual Release workflow); 5 = AGPL-3.0, the owner's standard (KVG_Standards licensing.md); 6 = not started, as instructed.
 
 ## Goal
 
@@ -30,7 +49,7 @@ Working and tested on the owner's PC only (Windows 11, PowerShell 5.1):
 
 Not done / not true yet:
 
-- **Nothing is committed.** All of the above is uncommitted work on branch `settings-ui` (see "First steps").
+- ~~Nothing is committed.~~ Out of date: it was committed and merged as PR #1.
 - Never run on a machine other than the owner's. No clean-machine test. No automated tests or CI. No `LICENSE`.
 - `instances/main` holds the owner's own server (name, cups, rotation, `settings.json`, `cups-backup/`). It must not ship.
 - No launcher, no first-run setup, no packaging.
