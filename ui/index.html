@@ -1,0 +1,820 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wreckfest 2 Server Settings</title>
+<!-- Palette: VisualAssault "neon" (vendor/visual-assault-themes.css, pinned to a tag). -->
+<link rel="stylesheet" href="/vendor/visual-assault-themes.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--color-bg); color: var(--color-text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+  header {
+    background: var(--color-top-bar-bg); border-bottom: 2px solid var(--color-accent-red); box-shadow: 0 0 18px var(--color-accent-red);
+    padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  }
+  h1 { font-size: 1.25rem; letter-spacing: .08em; text-transform: uppercase; text-shadow: 0 0 10px var(--color-text); }
+  nav { display: flex; flex-wrap: wrap; gap: 4px; padding: 12px 16px 0; max-width: 1200px; margin: 0 auto; border-bottom: 1px solid var(--color-border); }
+  nav button { border-radius: 4px 4px 0 0; box-shadow: none; border-color: var(--color-border); color: var(--color-text-muted); background: var(--color-bg); border-bottom: 0; }
+  nav button.on { color: var(--color-accent-green); border-color: var(--color-accent-green); box-shadow: 0 -2px 10px var(--color-accent-green); background: var(--color-surface); }
+  main { max-width: 1200px; margin: 0 auto; padding: 16px; }
+  .badge { font-size: .8rem; padding: 4px 10px; border: 1px solid; border-radius: 999px; }
+  .badge.up   { color: var(--color-accent-green); border-color: var(--color-accent-green); box-shadow: 0 0 8px var(--color-accent-green); }
+  .badge.down { color: var(--color-text-muted); border-color: var(--color-border); }
+  .notice { margin-bottom: 16px; padding: 10px 12px; border: 1px solid var(--color-accent-red); color: var(--color-accent-red); background: var(--color-bg-hover); }
+  .notice:empty { display: none; }
+  .notice.ok { border-color: var(--color-accent-green); color: var(--color-accent-green); }
+  .info { margin-bottom: 12px; padding: 8px 12px; border: 1px dashed var(--color-accent-blue); color: var(--color-accent-blue); font-size: .85rem; }
+  .info:empty { display: none; }
+  section.card, details.card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 6px; padding: 14px 16px; margin-bottom: 16px; }
+  h2 { font-size: .95rem; text-transform: uppercase; letter-spacing: .1em; color: var(--color-accent-green); text-shadow: 0 0 8px var(--color-accent-green); margin-bottom: 8px; }
+  summary { cursor: pointer; font-weight: 700; color: var(--color-accent-green); }
+  .muted { color: var(--color-text-muted); font-size: .85rem; }
+  .toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .toolbar .grow { flex: 1; }
+
+  select { width: 100%; padding: 6px 8px; font: inherit; background: var(--color-bg); color: var(--color-text); border: 1px solid var(--color-border); border-radius: 4px; }
+  select:focus { outline: none; border-color: var(--color-accent-blue); box-shadow: 0 0 8px var(--color-accent-blue); }
+  .customrow { display: flex; gap: 4px; align-items: stretch; }
+  .customrow button { padding: 2px 8px; }
+  select { color-scheme: dark; cursor: pointer; }
+  select option { background: var(--color-bg); color: var(--color-text); }
+  button.pill { width: 100%; padding: 3px 4px; font-size: .72rem; letter-spacing: 0; text-transform: none; box-shadow: none; border-style: dashed;
+                color: var(--color-accent-blue); border-color: var(--color-accent-blue); background: transparent; }
+  button.pill:hover { background: var(--color-bg-hover); }
+  button.pill:disabled { opacity: .45; border-color: var(--color-border); color: var(--color-text-muted); }
+  .ovwrap { display: flex; gap: 2px; align-items: stretch; }
+  .ovwrap > :first-child { flex: 1; min-width: 0; }
+  button.mini { flex: none; padding: 0 5px; font-size: .8rem; letter-spacing: 0; box-shadow: none; border-style: dashed;
+                color: var(--color-accent-blue); border-color: var(--color-accent-blue); background: transparent; }
+  input[type=text], input[type=number], input[type=password] { width: 100%; padding: 6px 8px; font: inherit; background: var(--color-bg); color: var(--color-text); border: 1px solid var(--color-border); border-radius: 4px; }
+  input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--color-accent-green); }
+  input:focus { outline: none; border-color: var(--color-accent-blue); box-shadow: 0 0 8px var(--color-accent-blue); }
+  input:disabled { opacity: .45; }
+  button {
+    font: inherit; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; padding: 8px 18px; border-radius: 4px;
+    background: var(--color-primary-action); color: var(--color-accent-green); border: 1px solid var(--color-accent-green); box-shadow: 0 0 10px var(--color-accent-green);
+  }
+  button:hover { background: var(--color-primary-action-hover); }
+  button:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; color: var(--color-text-muted); border-color: var(--color-border); background: var(--color-bg); }
+  button.small { padding: 2px 8px; letter-spacing: 0; box-shadow: none; font-size: .85rem; }
+  button.danger { color: var(--color-accent-red); border-color: var(--color-accent-red); }
+  button.dirty { color: var(--color-text); border-color: var(--color-accent-red); box-shadow: 0 0 10px var(--color-accent-red); }
+
+  /* global tab */
+  .row { display: grid; grid-template-columns: 24px 1fr; gap: 4px 10px; padding: 10px 0; border-top: 1px solid var(--color-border); max-width: 760px; }
+  .row:first-of-type { border-top: 0; }
+  .row label.name { font-weight: 600; cursor: pointer; }
+  .row .field, .row .hint { grid-column: 2; }
+  .row .hint { font-size: .8rem; color: var(--color-text-muted); }
+
+  /* event table */
+  .scroll { overflow-x: auto; }
+  .etable { min-width: 980px; }
+  .erow { display: grid; gap: 6px; align-items: center; padding: 5px 0; border-top: 1px solid var(--color-border);
+          grid-template-columns: 52px minmax(150px,1.5fr) minmax(100px,1fr) minmax(140px,1.3fr) 54px 54px 54px minmax(100px,.9fr) 112px; }
+  .erow > * { min-width: 0; }
+  .erow.head { border-top: 0; font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--color-text-muted); position: sticky; top: 0; background: var(--color-surface); z-index: 1; }
+  .erow .n { color: var(--color-text-muted); font-size: .8rem; display: flex; align-items: center; gap: 4px; }
+  .erow.off > :not(:first-child) { opacity: .4; }
+  .erow.off .n span { text-decoration: line-through; }
+  .erow .track { font-weight: 600; line-height: 1.2; }
+  .erow .track small { display: block; font-weight: 400; font-size: .72rem; color: var(--color-text-muted); }
+  .erow .ctl { display: flex; flex-wrap: nowrap; gap: 4px; justify-content: flex-end; }
+  .erow .ctl button { flex: none; padding: 2px 6px; }
+  .more { grid-column: 2 / -1; display: grid; gap: 8px 12px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); padding: 8px 10px; border: 1px dashed var(--color-border); border-radius: 4px; }
+  .more label { display: block; font-size: .75rem; color: var(--color-text-muted); margin-bottom: 2px; }
+  .more .wide { grid-column: 1 / -1; }
+  .flags { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; }
+  .flags label.flag { display: inline-flex; align-items: center; gap: 4px; font-size: .85rem; color: var(--color-text); margin: 0; cursor: pointer; }
+  .cars { display: grid; gap: 4px; }
+  .cars .car { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; }
+
+  /* cups */
+  .cupgrid { display: grid; gap: 8px 12px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); margin: 10px 0; }
+  .cupgrid label { display: block; font-size: .75rem; color: var(--color-text-muted); margin-bottom: 2px; }
+  .cupgrid .wide { grid-column: 1 / -1; }
+  .loopbox { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--color-border); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body class="neon-theme">
+<header>
+  <h1>Wreckfest 2 &middot; Server Settings</h1>
+  <span style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+    <span class="muted" id="instance" title="The server instance (instances/<name>) this page edits"></span>
+    <button id="apply" class="small" disabled title="Push your saved changes to the running server">Apply now</button>
+    <button id="srv" class="small" disabled title="Start or stop this instance's server">Start server</button>
+    <span id="status" class="badge down">checking&hellip;</span>
+  </span>
+</header>
+<nav id="tabs">
+  <button data-tab="global" class="on">Global defaults</button>
+  <button data-tab="rotation">Rotation</button>
+  <button data-tab="cups">Cups</button>
+  <button data-tab="password">Password</button>
+</nav>
+<main>
+  <div id="notice" class="notice"></div>
+
+  <div id="tab-rotation" hidden>
+    <p class="muted" style="margin-bottom:12px">The default event rotation, one row per event. Changes are saved to the rotation template. Use “Apply now” (top right) to push them to a running server, otherwise they apply the next time it starts.</p>
+    <div id="rot-info" class="info"></div>
+    <div id="rot"></div>
+  </div>
+
+  <div id="tab-cups" hidden>
+    <p class="muted" style="margin-bottom:12px">Cup settings are saved to the cup config. The game's own cup rotations can't be edited, so <b>Customize events</b> makes your own copy for that cup (starting with the cup's tracks, with settings taken from the main rotation).</p>
+    <div id="cups"></div>
+  </div>
+
+  <div id="tab-global">
+    <div class="toolbar"><button class="gsave" disabled>Save</button></div>
+    <p class="muted" style="margin-bottom:16px">
+      Tick a setting to make it the <b>default</b> for every event in the main rotation and in your own cups. A field that follows a default
+      shows <b>Global</b> (or <b>Cup</b>) on the Rotation and Cups tabs; click it there to <b>override it for just that event</b>, and
+      use the ↩ next to it to follow the default again. A cup's own settings win over Global for that cup. Unticked settings leave each
+      event's own value alone. Changes apply the next time the server starts, or use “Apply now” (top right) on a running server.
+    </p>
+    <div id="groups"></div>
+    <div class="toolbar"><button class="gsave" disabled>Save</button></div>
+  </div>
+
+  <div id="tab-password" hidden>
+    <section class="card">
+      <h2>Server password</h2>
+      <p class="muted" id="pwstate" style="margin-bottom:8px"></p>
+      <div class="toolbar">
+        <span class="muted">Current password:</span>
+        <code id="pwshown" style="padding:4px 10px; border:1px solid var(--color-border); border-radius:4px; min-width:160px">••••••••</code>
+        <button type="button" class="small" id="pwreveal">Show</button>
+        <span class="muted" id="pwtimer"></span>
+      </div>
+      <form id="pwform" autocomplete="off" class="toolbar" style="margin-bottom:0">
+        <input type="password" id="pw" placeholder="New password" maxlength="64" autocomplete="new-password" style="flex:1; min-width:240px; max-width:none; width:auto">
+        <button type="submit" id="pwsave" disabled>Set password</button>
+      </form>
+      <p class="muted" style="margin-top:8px">Players need it to join. It is stored on this PC only (in <code>password.local</code>, never in git) and stays hidden until you click Show, which hides it again after 15 seconds. Applies the next time the server starts.</p>
+    </section>
+    <section class="card">
+      <h2>History</h2>
+      <p class="muted" style="margin-bottom:8px">When the password was changed. Only the date and where it was changed from are kept, never the password.</p>
+      <div id="pwhistory"></div>
+    </section>
+  </div>
+</main>
+<datalist id="dl-levels"></datalist><datalist id="dl-modes"></datalist><datalist id="dl-weather"></datalist>
+<datalist id="dl-ai"></datalist><datalist id="dl-damage"></datalist><datalist id="dl-cars"></datalist>
+<datalist id="dl-start"></datalist><datalist id="dl-collect"></datalist><datalist id="dl-flags"></datalist>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const arr = x => Array.isArray(x) ? x : (x == null ? [] : [x]);
+function el(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (k === 'class') e.className = v;
+    else if (k === 'text') e.textContent = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (k !== 'list' && k in e) e[k] = v;
+    else e.setAttribute(k, v);
+  }
+  kids.flat().forEach(c => c != null && e.append(c));
+  return e;
+}
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  let data = null; try { data = await res.json(); } catch { /* no body */ }
+  if (!res.ok) throw new Error((data && data.error) || res.statusText);
+  return data;
+}
+const send = (method, path, body) => api(path, { method, headers: { 'Content-Type': 'application/json', 'X-WF-UI': '1' }, body: JSON.stringify(body) });
+function notice(text, ok) { const n = $('notice'); n.textContent = text; n.className = 'notice' + (ok ? ' ok' : ''); if (text) window.scrollTo({ top: 0 }); }
+
+// ---- dirty tracking ----
+let CH = {};   // drop-down values from /api/choices
+let TRACK_NAMES = {};      // track id -> "Venue - Layout", read from the game's files (empty if the game isn't installed)
+let WEATHER_LABELS = {};   // weather path -> "Name (file)"
+// Weather is per track: the game gives each track its own list of allowed weather. Unknown track: offer every weather file.
+const weatherFor = id => arr((CH.weatherByTrack || {})[id]).length ? arr(CH.weatherByTrack[id]) : arr(CH.weather);
+let OVERRIDES = {};        // saved Global overrides (key -> value); replaced when the Global tab saves
+const editors = new Map(); // loop id -> redraw function of that editor
+const CUP_LEVEL = new Map(); // cup loop slug -> { ovr: the cup's cup-level settings, jump: scroll to them }
+let CAR_LABELS = {};       // car id -> "Popper (car10)"
+let AI_LABELS = {};        // AI set path -> "American Cars (american)"
+// 'demolitionderby' is the game's own name for the deathmatch mode (same tracks in the game's default rotation).
+const MODE_LABELS = { deathmatch: 'deathmatch (Demolition Derby)', waypointrace: 'waypointrace (Waypoint Race)' };
+const dirty = new Set();
+// A Save button is only enabled (and highlighted) while it has something to save. `btns` is one button or a list.
+function setDirty(name, btns, on) {
+  on ? dirty.add(name) : dirty.delete(name);
+  [].concat(btns).forEach(b => { b.classList.toggle('dirty', on); b.disabled = !on; });
+  refreshApply();
+}
+
+// ---- apply to a running server ----
+let SERVER_RUNNING = false, APPLYING = false;
+function refreshApply() {
+  const b = $('apply'); if (!b) return;
+  b.disabled = !SERVER_RUNNING || dirty.size > 0 || APPLYING;
+  b.title = !SERVER_RUNNING ? 'The server is not running. Saved changes are used the next time it starts.'
+          : dirty.size > 0 ? 'Save your changes first, then apply them.'
+          : 'Push your saved changes to the running server.';
+}
+const savedMsg = () => SERVER_RUNNING ? 'Saved. Click “Apply now” to push it to the running server, or restart the server.' : 'Saved. It takes effect the next time the server starts.';
+$('apply').addEventListener('click', async () => {
+  if (!confirm('Apply the saved settings to the running server now?\n\nThe rotation reloads and the current track restarts, so a race in progress would restart. Name, password and ban settings still need a restart.')) return;
+  APPLYING = true; $('apply').textContent = 'Applying…'; refreshApply();
+  try {
+    const r = await send('POST', '/api/apply', {});
+    notice(r.steps.join(' ') + (r.applied ? ' ' + r.message : ' ' + r.message), r.applied);
+  } catch (e) { notice('Could not apply: ' + e.message); }
+  APPLYING = false; $('apply').textContent = 'Apply now'; refreshApply();
+});
+
+// ---- start / stop the server (same command Hardpoint runs: scripts\start.ps1) ----
+let SRV_BUSY = false, SERVER_KNOWN = false;
+function refreshSrv() {
+  const b = $('srv'); if (!b) return;
+  if (!SRV_BUSY) b.textContent = SERVER_RUNNING ? 'Stop server' : 'Start server';
+  b.classList.toggle('danger', SERVER_RUNNING);
+  b.disabled = SRV_BUSY || !SERVER_KNOWN;
+  b.title = SERVER_RUNNING ? 'Shut the server down (everyone connected is disconnected).' : 'Start the server for this instance in its own window.';
+}
+$('srv').addEventListener('click', async () => {
+  const stopping = SERVER_RUNNING;
+  if (stopping && !confirm('Stop the server?\n\nEveryone connected is disconnected. Settings you have not saved are not used when it starts again.')) return;
+  SRV_BUSY = true; $('srv').textContent = stopping ? 'Stopping…' : 'Starting… (about 20 s)'; refreshSrv();
+  try {
+    const r = await send('POST', stopping ? '/api/server/stop' : '/api/server/start', {});
+    if (stopping && r.stillRunning) {
+      if (confirm(r.message + '\n\nForce it to stop now?')) { const f = await send('POST', '/api/server/stop', { force: true }); notice(f.message, f.stopped); }
+      else notice(r.message);
+    } else notice(r.message, true);
+  } catch (e) { notice((stopping ? 'Could not stop the server: ' : 'Could not start the server: ') + e.message); }
+  SRV_BUSY = false; await pollStatus(); refreshSrv();
+});
+window.addEventListener('beforeunload', e => { if (dirty.size) { e.preventDefault(); e.returnValue = ''; } });
+
+// ---- inputs bound to an object ----
+function bound(obj, key, o, changed) {
+  o = o || {};
+  const i = el('input', { type: o.int ? 'number' : 'text', value: obj[key] ?? '' });
+  if (o.int) { i.min = o.min ?? 0; i.max = o.max ?? 999999; i.step = 1; }
+  if (o.list) i.setAttribute('list', o.list);
+  if (o.title) i.title = o.title;
+  if (o.placeholder) i.placeholder = o.placeholder;
+  i.addEventListener('input', () => { obj[key] = o.int ? (i.value === '' ? '' : Number(i.value)) : i.value; changed(); });
+  return i;
+}
+// The most cars the server will run (players plus bots). The game clamps a bigger grid down to this: I asked a test server
+// for 25, 30, 64 and 1000 and it kept 24.
+const MAX_PLAYERS = 24;
+const range = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
+
+// Rule flags: one string in the rules block, lower case, separated by "|". The server silently drops the WHOLE string when the
+// separator is wrong, so the page only ever writes this format. Names below were each tested on a server (docs/game-data-sources.md).
+const RULE_FLAGS = [
+  ['disable car resets', 'Car resets off'],
+  ['disable tuning', 'Tuning off'],
+  ['disable upgrades', 'Upgrades off'],
+  ['disable wrong way limiter', 'Wrong-way limiter off'],
+];
+const splitFlags = s => String(s || '').split('|').map(x => x.trim()).filter(Boolean);
+// Checkboxes bound to obj[key] (the flags string). Flags this page doesn't know are kept as they are and listed.
+function flagsEditor(obj, key, changed) {
+  const wrap = el('div', { class: 'flags' });
+  const known = RULE_FLAGS.map(f => f[0]);
+  const others = () => splitFlags(obj[key]).filter(x => !known.includes(x));
+  const write = on => { obj[key] = [...known.filter(n => on.has(n)), ...others()].join(' | '); changed(); };
+  const have = new Set(splitFlags(obj[key]));
+  RULE_FLAGS.forEach(([name, label]) => {
+    const cb = el('input', { type: 'checkbox', checked: have.has(name) });
+    cb.addEventListener('change', () => {
+      const on = new Set(splitFlags(obj[key])); cb.checked ? on.add(name) : on.delete(name); write(on);
+    });
+    wrap.append(el('label', { class: 'flag', title: name }, cb, ' ' + label));
+  });
+  if (others().length) wrap.append(el('div', { class: 'muted', text: 'Other flags kept as they are: ' + others().join(' | ') }));
+  return wrap;
+}
+// A drop-down of known values. A value that isn't in the list is kept (shown as "not in list"), and "Other…" switches
+// the field to free text so a value we don't know about can still be entered.
+function choice(obj, key, values, changed, o) {
+  o = o || {};
+  const wrap = el('div');
+  const draw = custom => {
+    wrap.replaceChildren();
+    if (custom) {
+      const t = bound(obj, key, { list: o.list }, changed);
+      wrap.append(el('div', { class: 'customrow' }, t,
+        el('button', { class: 'small', type: 'button', text: '▾', title: 'Back to the list', onclick: () => draw(false) })));
+      t.focus();
+      return;
+    }
+    const cur = String(obj[key] ?? '');   // compared as text so number lists work too
+    const sel = el('select');
+    if (o.empty !== undefined) sel.append(el('option', { value: '', text: o.empty }));
+    else if (cur === '') sel.append(el('option', { value: '', text: '— choose —' }));
+    const vals = arr(values).map(String);
+    if (cur !== '' && !vals.includes(cur)) sel.append(el('option', { value: cur, text: cur + ' (not in list)' }));
+    vals.forEach(v => sel.append(el('option', { value: v, text: (o.labels && o.labels[v]) || v })));
+    if (!o.fixed) sel.append(el('option', { value: '__other__', text: 'Other…' }));   // fixed = the full list is known
+    sel.value = cur;
+    sel.addEventListener('change', () => {
+      if (sel.value === '__other__') draw(true);
+      else { obj[key] = o.number ? Number(sel.value) : sel.value; changed(); }
+    });
+    wrap.append(sel);
+  };
+  draw(false);
+  return wrap;
+}
+const labeled = (text, input, cls) => el('div', { class: cls || '' }, el('label', { text }), input);
+
+function carEditor(list, changed) {
+  const box = el('div', { class: 'cars' });
+  const draw = () => {
+    box.replaceChildren();
+    list.forEach((c, idx) => box.append(el('div', { class: 'car' },
+      choice(c, 'allowed car type', CH.cars, changed, { labels: CAR_LABELS, fixed: true }),
+      choice(c, 'flags', ['reverse rule'], changed, { list: 'dl-flags', empty: '(no flags)' }),
+      el('button', { class: 'small danger', text: '✕', title: 'Remove', onclick: () => { list.splice(idx, 1); draw(); changed(); } }))));
+    box.append(el('div', null, el('button', { class: 'small', text: '+ car', onclick: () => { list.push({ 'allowed car type': '', flags: '' }); draw(); changed(); } })));
+  };
+  draw();
+  return box;
+}
+
+// ---- event loop editor (used for the main rotation and for custom cup loops) ----
+// The game's damage presets (damage_settings_list.vdsl). An empty value leaves the choice to the game; we don't know which
+// preset that is, so it is shown as "(game default)" rather than guessed.
+const DAMAGE_LABELS = { normal: 'Normal', realistic: 'Realistic', wrecker: 'Wrecker' };
+const DEFAULT_EVENT = () => ({
+  level: [{ 'level id': '', 'weather path': '', 'weather intent path': '', 'ai set path': 'career/ai-class-all.aist', 'game mode id': '' }],
+  rules: [{ laps: 1, 'time limit': 10, 'number of teams': 1, 'max number of participants': 24, flags: '', 'collecting order': 'Collecting Sequential', 'car reset delay (seconds)': 2, 'vehicle damage id': '' }],
+  'car restriction': [], 'bot count': 8,
+});
+// which override keys replace which event field on the main rotation
+const OVR_KEYS = ['bot count', 'laps', 'time limit', 'max number of participants', 'car reset delay (seconds)', 'vehicle damage id', 'ai set path', 'flags'];
+
+async function loopEditor(id, mount) {
+  mount.replaceChildren(el('p', { class: 'muted', text: 'Loading…' }));
+  let data;
+  try { data = await api('/api/loop?id=' + encodeURIComponent(id)); }
+  catch (e) { mount.replaceChildren(el('p', { class: 'notice', text: 'Could not load this rotation: ' + e.message })); return; }
+  const events = arr(data.events).map(ev => { ev.level = arr(ev.level); ev.rules = arr(ev.rules); ev['car restriction'] = arr(ev['car restriction']); return ev; });
+  // The list always has every track the game ships. Tracks missing from the file are added switched off, so turning one on
+  // is a tick. Their other settings start from a bangerrace event of this loop; the mode is the one the game gives that track.
+  const present = new Set(events.map(e => e.level[0]['level id']));
+  const proto = events.find(e => e.level[0]['game mode id'] === 'bangerrace') || DEFAULT_EVENT();
+  arr(CH.levels).filter(t => !present.has(t)).forEach(t => {
+    const ev = structuredClone(proto);
+    const wp = 'data/property/weather/' + t + '.weat';
+    ev.level[0]['level id'] = t;
+    ev.level[0]['game mode id'] = (CH.trackModes && CH.trackModes[t]) || 'bangerrace';
+    ev.level[0]['weather path'] = weatherFor(t)[0] || (arr(CH.weather).includes(wp) ? wp : '');
+    ev.disabled = true;
+    events.push(ev);
+  });
+  const known = new Set(arr(CH.levels));
+  const dirtyName = 'loop:' + id;
+  const save = el('button', { text: 'Save', disabled: true, title: 'Nothing to save yet', onclick: async () => {
+    save.disabled = true;
+    try {
+      await send('PUT', '/api/loop?id=' + encodeURIComponent(id), { events }); setDirty(dirtyName, save, false);
+      // A cup's events and the cup itself (name, points, ...) are saved separately: say so when the cup is still unsaved.
+      notice(id.startsWith('cup:') && dirty.has('cups') ? 'Events saved. The cup itself (its name and settings) is NOT saved yet: click “Save cups” at the top of this tab to keep it.' : savedMsg(), true);
+    }
+    catch (e) { notice('Not saved: ' + e.message); save.disabled = false; }
+  } });
+  const count = el('span', { class: 'muted' });
+  const rows = el('div', { class: 'etable' });
+  const enabledCount = () => events.filter(e => e.disabled !== true).length;
+  const label = () => enabledCount() + ' of ' + events.length + ' events enabled'
+    + (enabledCount() === 0 ? ' – turn on at least one to save' : dirty.has(dirtyName) ? ' (unsaved changes)' : '');
+  // Select all / Select none can leave nothing on while you pick; the server needs at least one event, so Save waits for it.
+  const syncSave = () => { if (enabledCount() === 0) { save.disabled = true; save.title = 'Turn on at least one event before saving.'; } };
+  const touch = () => { setDirty(dirtyName, save, true); syncSave(); count.textContent = label(); };
+  const setAll = on => { events.forEach(e => { if (on) delete e.disabled; else e.disabled = true; }); touch(); draw(); };
+  // Read live below: OVERRIDES changes when the Global tab saves, and a cup's settings change when its checkboxes do.
+  const cupSlug = id.startsWith('cup:') ? id.slice(4) : null;
+  // DEFAULTS an event follows unless it sets the field itself: the Global defaults, with the cup's own settings laid over
+  // them for a cup. An event "owns" a field when it lists it in its own `overrides` array; then its own value wins.
+  const cupOvr = () => (cupSlug && CUP_LEVEL.get(cupSlug)?.ovr) || {};
+  const hasKey = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+  const defaults = () => Object.assign({}, OVERRIDES, cupOvr());
+  const sourceOf = k => hasKey(cupOvr(), k) ? 'Cup' : 'Global';
+  const owns = (ev, k) => arr(ev.overrides).includes(k);
+  const homeOf = (ev, k) => k === 'bot count' ? ev : k === 'ai set path' ? ev.level[0] : ev.rules[0];
+  // What the event actually runs with for a field: its own value, else the default, else what the file says.
+  const effective = (ev, k) => (!owns(ev, k) && hasKey(defaults(), k)) ? defaults()[k] : homeOf(ev, k)[k];
+  // A field that follows a default shows a "Global" / "Cup" button instead of an input: click it to override the field for this
+  // event only (it starts from the default's value). An overridden field shows the input plus a small ↩ to follow the default again.
+  const makeOv = ev => (k, make) => {
+    if (!hasKey(defaults(), k)) return make();
+    const src = sourceOf(k), shown = defaults()[k] === '' ? '(game default)' : defaults()[k];
+    if (!owns(ev, k)) {
+      return el('button', { class: 'pill', type: 'button', text: src,
+        title: src + ' default: ' + shown + '. Click to override it for this event only. Change the default itself on the ' + (src === 'Cup' ? 'cup’s settings' : 'Global defaults tab') + '.',
+        onclick: () => { homeOf(ev, k)[k] = defaults()[k]; ev.overrides = [...arr(ev.overrides), k]; touch(); draw(); } });
+    }
+    return el('div', { class: 'ovwrap' }, make(),
+      el('button', { class: 'mini', type: 'button', text: '↩', title: 'Use the ' + src + ' default again (' + shown + ')',
+        onclick: () => { const rest = arr(ev.overrides).filter(x => x !== k); if (rest.length) ev.overrides = rest; else delete ev.overrides; touch(); draw(); } }));
+  };
+
+  const draw = () => {
+    count.textContent = label();
+    rows.replaceChildren(el('div', { class: 'erow head' }, ...['On  #', 'Track', 'Mode', 'Weather', 'Laps', 'Min', 'Bots', 'Damage', ''].map(t => el('div', { text: t }))));
+    events.forEach((ev, idx) => {
+      const l = ev.level[0], r = ev.rules[0];
+      // With car resets switched off the reset delay is not used, so its field is grayed out (the value is left as it is).
+      const ov = makeOv(ev);
+      let delayEl = null;
+      // "Off" is decided by the flags that actually win for this event (its own, else the cup/Global default).
+      const resetsOff = () => splitFlags(effective(ev, 'flags')).includes('disable car resets');
+      const syncDelay = () => {
+        if (!delayEl) return;
+        const ctl = delayEl.matches('input, button') ? delayEl : delayEl.querySelector('input');   // plain field, "Global" button, or field + ↩
+        if (!ctl) return;
+        if (ctl.dataset.baseTitle === undefined) ctl.dataset.baseTitle = ctl.title;
+        ctl.disabled = resetsOff();
+        ctl.title = ctl.disabled ? 'Car resets are off for this event, so the delay is not used.' : ctl.dataset.baseTitle;
+      };
+      const more = el('div', { class: 'more', hidden: true },
+        labeled('AI set', ov('ai set path', () => choice(l, 'ai set path', CH.aiSets, touch, { list: 'dl-ai', empty: '(none)', labels: AI_LABELS }))),
+        labeled('Max players', ov('max number of participants', () => choice(r, 'max number of participants', range(1, MAX_PLAYERS), touch, { number: true, fixed: true }))),
+        labeled('Teams', bound(r, 'number of teams', { int: 1, min: 1, max: 24 }, touch)),
+        labeled('Car reset delay (s)', (delayEl = ov('car reset delay (seconds)', () => bound(r, 'car reset delay (seconds)', { int: 1, min: 0, max: 60 }, touch)))),
+        labeled('Collecting order', choice(r, 'collecting order', CH.collectingOrders, touch, { fixed: true })),
+        labeled('Rule flags', ov('flags', () => flagsEditor(r, 'flags', () => { touch(); syncDelay(); })), 'wide'),
+        labeled('Weather intent path', bound(l, 'weather intent path', {}, touch), 'wide'),
+        labeled('Car restriction', carEditor(ev['car restriction'], touch), 'wide'));
+      syncDelay();
+      const move = d => () => { const j = idx + d; if (j < 0 || j >= events.length) return; [events[idx], events[j]] = [events[j], events[idx]]; touch(); draw(); };
+      const on = el('input', { type: 'checkbox', checked: ev.disabled !== true, title: 'Enabled: untick to skip this event without deleting it' });
+      on.addEventListener('change', () => {
+        if (on.checked) delete ev.disabled; else ev.disabled = true;
+        touch(); draw();
+      });
+      rows.append(el('div', { class: 'erow' + (ev.disabled === true ? ' off' : '') },
+        el('div', { class: 'n' }, on, el('span', { text: String(idx + 1) })),
+        el('div', { class: 'track', title: known.has(l['level id']) ? 'Track (fixed)' : 'This track is not in the game\'s track list' },
+          el('div', { text: (TRACK_NAMES[l['level id']] || l['level id']) + (known.has(l['level id']) ? '' : ' ⚠') }),
+          TRACK_NAMES[l['level id']] ? el('small', { text: l['level id'] }) : null),
+        choice(l, 'game mode id', CH.modes, touch, { labels: MODE_LABELS, fixed: true }),
+        choice(l, 'weather path', weatherFor(l['level id']), touch, { empty: '(none)', labels: WEATHER_LABELS, fixed: true }),
+        ov('laps', () => bound(r, 'laps', { int: 1, min: 0, max: 99, title: 'Laps' }, touch)),
+        ov('time limit', () => bound(r, 'time limit', { int: 1, min: 0, max: 600, title: 'Time limit (minutes)' }, touch)),
+        ov('bot count', () => bound(ev, 'bot count', { int: 1, min: 0, max: 24, title: 'Bots' }, touch)),
+        ov('vehicle damage id', () => choice(r, 'vehicle damage id', CH.damage, touch, { empty: '(game default)', labels: DAMAGE_LABELS, fixed: true })),
+        el('div', { class: 'ctl' },
+          el('button', { class: 'small', text: '⋯', title: 'More settings', onclick: () => { more.hidden = !more.hidden; } }),
+          el('button', { class: 'small', text: '▲', title: 'Move up', onclick: move(-1) }),
+          el('button', { class: 'small', text: '▼', title: 'Move down', onclick: move(1) })),
+        more));
+    });
+  };
+  mount.replaceChildren(
+    el('div', { class: 'toolbar' }, save, count,
+      el('button', { class: 'small', type: 'button', text: 'Select all', title: 'Switch every track on', onclick: () => setAll(true) }),
+      el('button', { class: 'small', type: 'button', text: 'Select none', title: 'Switch every track off, then tick the ones you want', onclick: () => setAll(false) }),
+      el('span', { class: 'muted grow', text: 'Every track is listed. Tick “On” to include one. ▲▼ set the order. ⋯ shows more settings per track.' })),
+    el('div', { class: 'scroll' }, rows));
+  editors.set(id, draw);   // so a Global overrides save can redraw this table without losing unsaved edits
+  draw();
+}
+
+// ---- cups ----
+const CUP_LOOP = /^data\/property\/settings\/cup\/wf2s_([a-z0-9_]{1,40})\.becl$/;
+async function cupsTab() {
+  const mount = $('cups');
+  let cfg;
+  try { cfg = await api('/api/cups'); } catch (e) { mount.replaceChildren(el('p', { class: 'notice', text: 'Could not load cups: ' + e.message })); return; }
+  const defaults = cfg.defaults || {};
+  const cups = arr(cfg.cups).map(c => { c['race settings'] = arr(c['race settings']); c['car restriction'] = arr(c['car restriction']); c.overrides = c.overrides || {}; return c; });
+  const save = el('button', { text: 'Save cups', disabled: true, title: 'Nothing to save yet', onclick: () => saveCups() });
+  async function saveCups(quiet) {
+    save.disabled = true;
+    try { await send('PUT', '/api/cups', { cups }); setDirty('cups', save, false); if (!quiet) notice(savedMsg(), true); return true; }
+    catch (e) { notice('Not saved: ' + e.message); save.disabled = false; return false; }
+  }
+  const touch = () => setDirty('cups', save, true);
+  const list = el('div');
+  const open = new Set();
+  const editing = new Set();   // cup loops whose event table is showing (by slug)
+
+  // One cup-level setting: a checkbox that locks the value for every event of the cup, and the value itself.
+  const cupLevel = (c, m, key, text, control, read, start) => {
+    const box = el('input', { type: 'checkbox', checked: Object.prototype.hasOwnProperty.call(c.overrides, key), title: 'Make this the default for every event in the cup (an event can still override it)' });
+    control.disabled = !box.checked;
+    const apply = () => {
+      if (box.checked) c.overrides[key] = read(); else delete c.overrides[key];
+      control.disabled = !box.checked;
+      touch(); editors.get('cup:' + m[1])?.();   // the event table switches between the pill and its own control right away
+    };
+    box.addEventListener('change', apply);
+    control.addEventListener('input', () => { if (box.checked) apply(); });
+    return labeled(text, el('div', { class: 'customrow' }, box, control));
+  };
+
+  // Clone a cup under a new name. The copy keeps every setting (points, start order, car restriction, cup-level settings) and
+  // gets its own events file: a copy of this cup's events if it has its own, else the game's events for the built-in cup. It is
+  // a custom cup (not "built-in"), so it can be deleted like one made with "+ Add cup".
+  async function cloneCup(idx, m) {
+    const c = cups[idx];
+    if (m && dirty.has('loop:cup:' + m[1])) { notice('Save this cup’s events first, then clone it.'); return; }
+    const name = (prompt('Name for the copy of "' + c['cup name'] + '":', c['cup name'] + ' copy') || '').trim();
+    if (!name) return;
+    if (name.length > 100) { notice('That name is too long (100 characters at most).'); return; }
+    if (cups.some(x => String(x['cup name']).toLowerCase() === name.toLowerCase())) { notice('There is already a cup called "' + name + '". Pick a different name.'); return; }
+    try {
+      const r = await send('POST', '/api/cup-loop', m ? { name, cloneOf: m[1] } : { name, from: c['event loop'] });
+      const copy = structuredClone(c);
+      Object.assign(copy, { 'cup name': name, 'event loop': r.path, builtin: null, overrides: structuredClone(c.overrides || {}) });
+      cups.splice(idx + 1, 0, copy);
+      open.clear(); open.add(idx + 1);
+      const made = CUP_LOOP.exec(r.path); if (made) editing.add(made[1]);   // show the copy's events straight away
+      touch(); draw();
+      notice('Cloned "' + c['cup name'] + '" as "' + name + '". Click “Save cups” to keep it.', true);
+    } catch (e) { notice('Could not clone: ' + e.message); }
+  }
+
+  const draw = () => {
+    list.replaceChildren();
+    CUP_LEVEL.clear();
+    cups.forEach((c, idx) => {
+      const s = c['race settings'][0];
+      const m = CUP_LOOP.exec(c['event loop']);
+      const loopMount = el('div');
+      let levelGrid = null;
+      if (m) {
+        const botsIn = el('input', { type: 'number', min: 0, max: 24, step: 1, value: c.overrides['bot count'] ?? 8 });
+        const dmgIn = el('select', null, el('option', { value: '', text: '(game default)' }),
+          ...arr(CH.damage).map(v => el('option', { value: v, text: DAMAGE_LABELS[v] || v })));
+        dmgIn.value = c.overrides['vehicle damage id'] ?? '';
+        const aiVal = c.overrides['ai set path'] ?? 'career/ai-class-all.aist';
+        const aiIn = el('select', null, ...[...new Set([...arr(CH.aiSets), aiVal])].map(v => el('option', { value: v, text: AI_LABELS[v] || v })));
+        aiIn.value = aiVal;
+        levelGrid = el('div', { class: 'cupgrid' },
+          cupLevel(c, m, 'bot count', 'Bots – same for every event', botsIn, () => (botsIn.value === '' ? 0 : Number(botsIn.value))),
+          cupLevel(c, m, 'vehicle damage id', 'Damage – same for every event', dmgIn, () => dmgIn.value),
+          cupLevel(c, m, 'ai set path', 'AI set (bot cars) – same for every event', aiIn, () => aiIn.value));
+      }
+      // The panel's title follows the Name box as you type.
+      const summ = el('summary', { text: c['cup name'] || '(unnamed cup)' });
+      const body = [
+        el('div', { class: 'cupgrid' },
+          labeled('Name', bound(c, 'cup name', {}, () => { summ.textContent = c['cup name'] || '(unnamed cup)'; touch(); }), 'wide'),
+          labeled('Description', bound(c, 'cup description', {}, touch), 'wide'),
+          labeled('Start order', choice(s, 'start order', CH.startOrders, touch, { fixed: true })),
+          labeled('Points per position (separated by ;)', bound(s, 'point distribution', {}, touch), 'wide'),
+          labeled('Points for best lap', bound(s, 'points for best lap time', { int: 1, min: 0, max: 1000 }, touch)),
+          labeled('Points for highest score', bound(s, 'points for highest score', { int: 1, min: 0, max: 1000 }, touch)),
+          labeled('Last race multiplier', bound(s, 'last race multiplier', { int: 1, min: 0, max: 100 }, touch)),
+          labeled('Race flags', bound(s, 'flags', {}, touch)),
+          labeled('Car restriction', carEditor(c['car restriction'], touch), 'wide')),
+        levelGrid
+          ? el('div', null, el('div', { class: 'muted' }, 'Tick one to use that value for every event in this cup (the events below then show “Cup”). Untick it to go back to each event’s own value.'), levelGrid)
+          : el('div', { class: 'muted' }, 'Customize this cup’s events to set bots, damage and the AI set for the whole cup.'),
+        el('div', { class: 'loopbox' },
+          m ? el('div', null,
+                el('div', { class: 'toolbar' }, el('b', { text: 'Events (custom)' }),
+                  el('button', { class: 'small', text: editing.has(m[1]) ? 'Hide events' : 'Edit events', onclick: ev => {
+                    const showing = !editing.has(m[1]);
+                    showing ? editing.add(m[1]) : editing.delete(m[1]);
+                    ev.currentTarget.textContent = showing ? 'Hide events' : 'Edit events';
+                    loopMount.hidden = !showing;
+                    if (showing && !loopMount.hasChildNodes()) loopEditor('cup:' + m[1], loopMount);   // hiding keeps unsaved edits
+                  } })),
+                loopMount)
+            : el('div', { class: 'toolbar' },
+                el('span', { class: 'muted', text: 'Events: built-in game rotation (' + c['event loop'] + ') – not editable here.' }),
+                el('button', { class: 'small', text: 'Customize events', onclick: async () => {
+                  try {
+                    const r = await send('POST', '/api/cup-loop', { name: c['cup name'], from: c['event loop'] });
+                    c['event loop'] = r.path;
+                    const slug = CUP_LOOP.exec(r.path); if (slug) editing.add(slug[1]);
+                    if (await saveCups(true)) notice('Created your own copy of the events for "' + c['cup name'] + '". It starts with this cup\'s tracks; tick more in the list to add others.', true);
+                    open.add(idx); draw();
+                  } catch (e) { notice('Could not customize: ' + e.message); }
+                } }))),
+        el('div', { class: 'toolbar' },
+          el('button', { class: 'small', text: '▲ Up', onclick: () => { if (idx > 0) { [cups[idx - 1], cups[idx]] = [cups[idx], cups[idx - 1]]; touch(); draw(); } } }),
+          el('button', { class: 'small', text: '▼ Down', onclick: () => { if (idx < cups.length - 1) { [cups[idx + 1], cups[idx]] = [cups[idx], cups[idx + 1]]; touch(); draw(); } } }),
+          el('button', { class: 'small', text: 'Clone', title: 'Make a copy of this cup under a new name. The copy is a custom cup of your own, so it can be deleted.',
+            onclick: () => cloneCup(idx, m) }),
+          c.builtin && defaults[c.builtin]
+            ? el('button', { class: 'small danger', text: 'Reset to defaults', title: 'Put this cup back exactly as the game ships it, including its events',
+                onclick: () => {
+                  if (!confirm('Reset "' + c['cup name'] + '" to the game’s defaults? Your changes to this cup, including its own events, are lost. (Save cups to apply.)')) return;
+                  const fresh = structuredClone(defaults[c.builtin]);
+                  fresh.builtin = c.builtin; fresh.overrides = {};
+                  fresh['race settings'] = arr(fresh['race settings']); fresh['car restriction'] = arr(fresh['car restriction']);
+                  cups[idx] = fresh; touch(); draw();
+                } })
+            : el('button', { class: 'small danger', text: 'Delete cup', onclick: () => { if (confirm('Delete cup "' + c['cup name'] + '"? Its own events go with it. (Save cups to apply.)')) { cups.splice(idx, 1); touch(); draw(); } } })),
+      ];
+      const d = el('details', { class: 'card', open: open.has(idx) }, summ, ...body);
+      d.addEventListener('toggle', () => { d.open ? open.add(idx) : open.delete(idx); });
+      if (m) CUP_LEVEL.set(m[1], { ovr: c.overrides, jump: () => { d.open = true; levelGrid.scrollIntoView({ block: 'center', behavior: 'smooth' }); } });
+      list.append(d);
+      loopMount.hidden = !(m && editing.has(m[1]));
+      if (!loopMount.hidden) loopEditor('cup:' + m[1], loopMount);
+    });
+    if (!cups.length) list.append(el('p', { class: 'muted', text: 'No cups yet.' }));
+  };
+  mount.replaceChildren(el('div', { class: 'toolbar' }, save,
+    el('button', { text: '+ Add cup', onclick: async () => {
+      try {
+        const r = await send('POST', '/api/cup-loop', { name: 'New Cup' });
+        const base = cups.length ? structuredClone(cups[cups.length - 1]) : { 'race settings': [{ 'point distribution': '30;27;25;20;19;18;17;16;15;14;13;12;11;10;9;8;7;6;5;4;3;2;1;0', flags: '', 'start order': 'random', 'points for best lap time': 0, 'points for highest score': 0, 'last race multiplier': 1 }], icon: '', 'car restriction': [] };
+        Object.assign(base, { 'cup name': 'New Cup', 'cup description': '', 'event loop': r.path });
+        base.builtin = null; base.overrides = {};
+        cups.push(base); open.add(cups.length - 1); touch(); draw();
+      } catch (e) { notice('Could not add a cup: ' + e.message); }
+    } })), list);
+  draw();
+}
+
+// ---- global overrides (same as before) ----
+const GROUPS = [
+  ['Bots & damage', ['bot count', 'ai set path', 'vehicle damage id']],
+  ['Race rules', ['laps', 'time limit', 'max number of participants', 'car reset delay (seconds)', 'flags']],
+  ['Server', ['name', 'description', 'countdown time', 'voting time']],
+];
+const rows = {};
+// The flags checkboxes as a Global-tab field: behaves like an input (value, disabled) so the rest of the tab treats it alike.
+function flagsInput(value, enabled) {
+  const holder = { flags: value || '' };
+  const w = flagsEditor(holder, 'flags', globalChanged);
+  Object.defineProperty(w, 'value', { get: () => holder.flags });
+  Object.defineProperty(w, 'disabled', {
+    get: () => w.dataset.off === '1',
+    set: v => { w.dataset.off = v ? '1' : '0'; w.querySelectorAll('input').forEach(i => { i.disabled = v; }); },
+  });
+  w.disabled = !enabled;
+  return w;
+}
+function buildGlobal(state) {
+  const byKey = Object.fromEntries(state.fields.map(f => [f.Key, f]));
+  $('groups').replaceChildren();
+  GROUPS.forEach(([title, keys]) => {
+    const sec = el('section', { class: 'card' }, el('h2', { text: title }));
+    keys.forEach(key => {
+      const f = byKey[key]; if (!f) return;
+      const tv = state.template.values[key], varies = state.template.varies[key];
+      const has = Object.prototype.hasOwnProperty.call(state.overrides, key);
+      const input = key === 'flags'
+        ? flagsInput(has ? state.overrides[key] : '', has)
+        : key === 'vehicle damage id'
+        ? el('select', { disabled: !has }, el('option', { value: '', text: '(game default)' }), ...(CH.damage || Object.keys(DAMAGE_LABELS)).map(v => el('option', { value: v, text: DAMAGE_LABELS[v] || v })))
+        : key === 'max number of participants'
+          ? el('select', { disabled: !has }, ...range(1, MAX_PLAYERS).map(n => el('option', { value: String(n), text: String(n) })))
+          : el('input', { type: f.Type === 'int' ? 'number' : 'text', value: has ? state.overrides[key] : (tv ?? ''), disabled: !has });
+      if (key === 'vehicle damage id') input.value = (has ? state.overrides[key] : tv) || '';
+      if (key === 'max number of participants') input.value = String(has ? state.overrides[key] : (tv ?? MAX_PLAYERS));
+      if (f.Type === 'int' && input.tagName === 'INPUT') { input.min = f.Min; input.max = f.Max; input.step = 1; }
+      const box = el('input', { type: 'checkbox', id: 'c' + key, checked: has });
+      box.addEventListener('change', () => { input.disabled = !box.checked; if (box.checked) input.focus(); globalChanged(); });
+      input.addEventListener('input', globalChanged);
+      const shown = varies ? 'varies by event (' + varies.map(x => x === '' ? '(empty)' : x).join(', ') + ')' : (tv === '' || tv == null ? '(empty)' : tv);
+      const hintText = (f.Hint ? f.Hint + '. ' : '') + 'Template: ' + shown;
+      const hint = el('div', { class: 'hint', text: hintText });
+      const rowEl = el('div', { class: 'row' }, box, el('label', { class: 'name', htmlFor: box.id, text: f.Label }),
+        el('div', { class: 'field' }, input), hint);
+      sec.append(rowEl);
+      rows[key] = { box, input, f, row: rowEl, hint, hintText };
+    });
+    $('groups').append(sec);
+  });
+  $('instance').textContent = 'instance: ' + state.instance;
+  savedSnap = JSON.stringify(collectOverrides());   // what is on disk now; Save is enabled only when the form differs from it
+  syncResetDelay(); globalChanged();                 // if the saved file has both, the form differs and Save lets you clean it up
+}
+// Forcing "car resets off" makes a forced reset delay meaningless: untick it and gray it out until resets are back on.
+function syncResetDelay() {
+  const f = rows['flags'], d = rows['car reset delay (seconds)'];
+  if (!f || !d) return;
+  const off = f.box.checked && splitFlags(f.input.value).includes('disable car resets');
+  if (off) d.box.checked = false;
+  d.box.disabled = off;
+  d.input.disabled = !d.box.checked;
+  d.row.style.opacity = off ? '.45' : '';
+  d.hint.textContent = off ? 'Not used while car resets are switched off.' : d.hintText;
+}
+// The Save buttons at the top and bottom of the Global tab act as one.
+const GSAVE = [...document.querySelectorAll('.gsave')];
+let savedSnap = '';
+function collectOverrides() {
+  const overrides = {};
+  for (const [key, r] of Object.entries(rows)) {
+    if (!r.box.checked) continue;
+    overrides[key] = r.f.Type === 'int' ? (r.input.value === '' ? null : Number(r.input.value)) : r.input.value;
+  }
+  return overrides;
+}
+function globalChanged() { syncResetDelay(); setDirty('global', GSAVE, JSON.stringify(collectOverrides()) !== savedSnap); }
+GSAVE.forEach(b => b.addEventListener('click', async () => {
+  const overrides = collectOverrides();
+  GSAVE.forEach(x => { x.disabled = true; });
+  try {
+    const res = await send('PUT', '/api/overrides', { overrides });
+    OVERRIDES = res.overrides || overrides;          // what the server actually stored
+    savedSnap = JSON.stringify(overrides);
+    setDirty('global', GSAVE, false);
+    notice(savedMsg(), true);
+    showOverrideInfo(OVERRIDES);
+    editors.forEach(redraw => redraw());              // Rotation fields switch between "Global" and editable right away
+  }
+  catch (e) { notice('Not saved: ' + e.message); GSAVE.forEach(x => { x.disabled = false; }); }
+}));
+
+function showPasswordHistory(history) {
+  const items = arr(history);
+  if (!items.length) { $('pwhistory').replaceChildren(el('p', { class: 'muted', text: 'No changes recorded yet.' })); return; }
+  const when = at => { const d = new Date(at); return isNaN(d) ? String(at) : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }); };
+  $('pwhistory').replaceChildren(el('div', { class: 'etable', style: 'min-width:0' },
+    el('div', { class: 'erow head', style: 'grid-template-columns: 220px 1fr' }, el('div', { text: 'When' }), el('div', { text: 'Changed from' })),
+    ...items.map(h => el('div', { class: 'erow', style: 'grid-template-columns: 220px 1fr' }, el('div', { text: when(h.at) }), el('div', { class: 'muted', text: h.by || '' })))));
+}
+function showPasswordState(isSet) {
+  $('pwstate').textContent = isSet ? 'A password is set.' : 'No password is set. The server will refuse to start until you set one.';
+}
+// Show fetches the password only on click and does not keep it: it is cleared from the page after 15 seconds, after a change
+// and when you leave the tab.
+let pwHideTimer = null;
+function hidePassword() {
+  clearInterval(pwHideTimer); pwHideTimer = null;
+  $('pwshown').textContent = '••••••••'; $('pwreveal').textContent = 'Show'; $('pwtimer').textContent = '';
+}
+$('pwreveal').addEventListener('click', async () => {
+  if (pwHideTimer) { hidePassword(); return; }
+  try {
+    const r = await send('POST', '/api/password/reveal', {});
+    if (!r.password) { $('pwshown').textContent = '(none set)'; return; }
+    $('pwshown').textContent = r.password; $('pwreveal').textContent = 'Hide';
+    let left = 15; $('pwtimer').textContent = 'hides in ' + left + 's';
+    pwHideTimer = setInterval(() => { left--; if (left <= 0) hidePassword(); else $('pwtimer').textContent = 'hides in ' + left + 's'; }, 1000);
+  } catch (err) { notice('Could not show the password: ' + err.message); }
+});
+$('pw').addEventListener('input', () => { $('pwsave').disabled = $('pw').value.trim() === ''; });
+$('pwform').addEventListener('submit', async e => {
+  e.preventDefault();
+  const pw = $('pw').value;
+  if (pw.trim() === '') return;
+  $('pwsave').disabled = true;
+  try { const r = await send('PUT', '/api/password', { password: pw }); $('pw').value = ''; showPasswordState(true); showPasswordHistory(r && r.history); hidePassword(); notice('Password changed. Restart the server to apply.', true); }
+  catch (err) { notice('Password not changed: ' + err.message); $('pwsave').disabled = false; }
+});
+
+function showOverrideInfo(overrides) {
+  const keys = Object.keys(overrides).filter(k => OVR_KEYS.includes(k));
+  $('rot-info').textContent = keys.length
+    ? 'Global defaults are set for: ' + keys.join(', ') + '. A field that says “Global” follows that default. Click it to override it for just that event, and use the ↩ beside it to follow the default again. Change the default itself on the Global defaults tab.'
+    : '';
+}
+
+// ---- tabs / startup ----
+function show(tab) {
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  for (const t of ['rotation', 'cups', 'global', 'password']) $('tab-' + t).hidden = t !== tab;
+  if (tab !== 'password' && typeof hidePassword === 'function') hidePassword();
+  try { history.replaceState(null, '', '#' + tab); } catch { /* ignore */ }
+}
+$('tabs').addEventListener('click', e => { if (e.target.dataset.tab) show(e.target.dataset.tab); });
+
+function setStatus(running) {
+  SERVER_RUNNING = !!running; SERVER_KNOWN = true; refreshApply(); refreshSrv();
+  const s = $('status'); s.className = 'badge ' + (running ? 'up' : 'down');
+  s.textContent = running ? 'Server running' : 'Server stopped';
+}
+async function pollStatus() { try { setStatus((await api('/api/state')).running); } catch { /* keep last */ } }
+
+(async function init() {
+  try {
+    const [state, choices] = await Promise.all([api('/api/state'), api('/api/choices')]);
+    CH = choices;
+    TRACK_NAMES = (choices.names && choices.names.tracks) || {};
+    const nm = (choices.names || {});
+    CAR_LABELS = Object.fromEntries(Object.entries(nm.cars || {}).map(([id, n]) => [id, n + ' (' + id + ')']));
+    AI_LABELS = Object.fromEntries(Object.entries(nm.aiSets || {}).map(([p, n]) => [p, n + ' (' + p.split('/').pop().replace(/\.aist$/, '') + ')']));
+    WEATHER_LABELS = Object.fromEntries(Object.entries((choices.names && choices.names.weather) || {}).map(([p, n]) => [p, n + ' (' + p.split('/').pop().replace(/\.weat$/, '') + ')']));
+    const fill = (id, items) => $(id).replaceChildren(...arr(items).map(v => el('option', { value: v })));
+    fill('dl-levels', choices.levels); fill('dl-modes', choices.modes); fill('dl-weather', choices.weather); fill('dl-ai', choices.aiSets);
+    fill('dl-damage', choices.damage); fill('dl-cars', choices.cars); fill('dl-start', choices.startOrders); fill('dl-collect', choices.collectingOrders);
+    fill('dl-flags', ['reverse rule']);
+    buildGlobal(state); setStatus(state.running); showPasswordState(state.passwordSet); showPasswordHistory(state.passwordHistory);
+    if (state.running) notice('The server is running. After you save, click “Apply now” to push changes to it live.');
+    OVERRIDES = state.overrides || {};
+    showOverrideInfo(OVERRIDES);
+    await loopEditor('main', $('rot'));
+    await cupsTab();
+    const t = location.hash.slice(1); show(['rotation', 'cups', 'global', 'password'].includes(t) ? t : 'global');   // Global overrides is the first tab and the one that opens
+  } catch (e) { notice('Could not load settings: ' + e.message); }
+  setInterval(pollStatus, 15000);
+})();
+</script>
+</body>
+</html>
