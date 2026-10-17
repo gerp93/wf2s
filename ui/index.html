@@ -814,9 +814,15 @@ const factRow = (label, value) => el('div', { style: 'display:grid; grid-templat
   el('div', { class: 'muted', text: label }), el('div', {}, value));
 const okText = (t, good) => el('span', { text: t, style: 'color: var(--color-accent-' + (good ? 'green' : 'red') + ')' });
 
+const STALE = 'This page is being served by an older copy of the settings program (it does not know about the Network & version tab). Close it and start it again (Start.cmd, or scripts\\ui.ps1); a running game server is not affected.';
 function showBuild(b) {
-  b = b || {};
   const banner = $('build-banner');
+  if (!b) {   // an older ui.ps1 is still running and sent no build info: say so rather than claiming the game is missing
+    banner.textContent = STALE;
+    $('build-facts').replaceChildren(el('p', { class: 'muted', text: 'Unknown: ' + STALE }));
+    $('build-update').disabled = true;
+    return;
+  }
   if (!b.installed) banner.textContent = 'The game server is not installed yet. Run Start.cmd again to finish the setup.';
   else if (b.differs) banner.textContent = 'The installed game build (' + b.installed + ') is not the one this app was last checked against (' + b.known + '). It should still work, but if track names look wrong or a setting is refused, check for an app update.';
   else banner.textContent = '';
@@ -865,7 +871,7 @@ async function loadNetwork() {
     const printed = r.lines && r.lines.length ? [el('details', {}, el('summary', { class: 'muted', text: 'What the server printed' }), el('pre', { class: 'muted', text: r.lines.join('\n'), style: 'white-space:pre-wrap' }))] : [];
     $('net-advice').replaceChildren(...advice.map(t => el('p', { class: 'muted', style: 'margin-bottom:4px', text: t })), ...printed);
     $('net-when').textContent = 'read at ' + new Date().toLocaleTimeString();
-  } catch (e) { $('net-when').textContent = ''; notice('Could not read the network details: ' + e.message); }
+  } catch (e) { $('net-when').textContent = ''; notice(/not found/i.test(e.message) ? STALE : 'Could not read the network details: ' + e.message); }
   $('net-refresh').disabled = false;
 }
 $('net-refresh').addEventListener('click', loadNetwork);
