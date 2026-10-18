@@ -95,6 +95,15 @@
   .cupgrid label { display: block; font-size: .75rem; color: var(--color-text-muted); margin-bottom: 2px; }
   .cupgrid .wide { grid-column: 1 / -1; }
   .loopbox { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--color-border); }
+  /* network tab: numbered router steps */
+  .step { display: grid; grid-template-columns: 40px 1fr; gap: 14px; padding: 16px 0 6px; margin-top: 16px; border-top: 1px solid var(--color-border); }
+  .step p { margin-bottom: 8px; }
+  .step h3 { font-size: 1.05rem; margin-bottom: 6px; color: var(--color-text); }
+  .stepno { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--color-accent-green); color: var(--color-accent-green); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; box-shadow: 0 0 8px var(--color-accent-green); }
+  .vals { margin: 8px 0 10px; max-width: 640px; border: 1px solid var(--color-border); border-radius: 6px; padding: 2px 12px; background: var(--color-bg); }
+  .vals .fact { display: grid; grid-template-columns: 220px 1fr auto; gap: 4px 12px; align-items: center; padding: 8px 0; border-top: 1px solid var(--color-border); }
+  .vals .fact:first-child { border-top: 0; }
+  .vals .fact .val { font-weight: 700; font-size: 1.05rem; color: var(--color-accent-blue); font-family: ui-monospace, Consolas, monospace; overflow-wrap: anywhere; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -167,12 +176,42 @@
 
   <div id="tab-network" hidden>
     <section class="card">
-      <h2>Letting friends join</h2>
-      <p class="muted" style="margin-bottom:8px">Friends on the internet reach your server through your router. That needs two things in the router's settings, which no program can do for you:</p>
-      <ol class="muted" style="margin:0 0 12px 22px">
-        <li><b>A fixed address for this PC</b> (the router calls it a DHCP reservation or static lease). Without it the router may hand this PC a different address one day, and the forward would point at the wrong machine.</li>
-        <li><b>Port forwarding</b> of the game port to that address (the router may call it a virtual server). It tells the router: &ldquo;traffic arriving on this port belongs to this PC.&rdquo;</li>
-      </ol>
+      <h2>Let friends join your game: 2 steps on your router</h2>
+      <p style="margin-bottom:8px">This lets friends outside your home find your server <b>in Wreckfest 2</b> (the in-game server list). Players on your own home network need none of it.</p>
+      <p style="margin-bottom:8px">Both steps are done on <b>your router&rsquo;s own settings page</b>, not here and not in Windows. Do them in this order, because step 2 uses the address from step 1.</p>
+      <div class="toolbar" style="margin-bottom:0">
+        <span>Open your router&rsquo;s page:</span>
+        <span id="net-router"></span>
+        <span class="muted">(Its sign-in is often printed on a sticker on the router. Your internet provider&rsquo;s help pages can tell you if not.)</span>
+      </div>
+
+      <div class="step">
+        <div class="stepno">1</div>
+        <div>
+          <h3>Give this PC a fixed address</h3>
+          <p>Routers hand out addresses automatically and may give this PC a different one later, which would break step 2. Ask the router to <b>always give this PC the same address</b>.</p>
+          <p class="muted">In the router, look for: <b>DHCP reservation</b>, <b>static lease</b>, <b>address reservation</b> or <b>reserved IP</b>. Pick this PC from the list of connected devices, then reserve the address below for it.</p>
+          <div id="net-step1" class="vals"><div class="fact"><span class="muted">reading&hellip;</span></div></div>
+          <p id="net-step1-state" class="muted"></p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="stepno">2</div>
+        <div>
+          <h3>Forward the game port to this PC</h3>
+          <p>This tells the router: &ldquo;game traffic that arrives on this port belongs to this PC.&rdquo; Without it, the router drops friends&rsquo; connections.</p>
+          <p class="muted">In the router, look for: <b>Port forwarding</b>, <b>Virtual server</b>, <b>Port mapping</b> or <b>NAT</b> (sometimes under &ldquo;Advanced&rdquo; or &ldquo;Gaming&rdquo;). Add one new rule with these values:</p>
+          <div id="net-step2" class="vals"><div class="fact"><span class="muted">reading&hellip;</span></div></div>
+          <p class="muted">If the router asks for a range, use the same number twice (<span id="net-range"></span>). The rule&rsquo;s name can be anything, such as &ldquo;Wreckfest 2&rdquo;. Do not use &ldquo;DMZ&rdquo;; it exposes the whole PC.</p>
+        </div>
+      </div>
+
+      <p class="muted" style="margin:12px 0 0">Every router looks different, and these pages can&rsquo;t show yours. If you can&rsquo;t find a setting, search the web for your router&rsquo;s model name plus <b>&ldquo;port forwarding&rdquo;</b>. When both steps are saved, start the server and check <b>Is it working?</b> below.</p>
+    </section>
+    <section class="card">
+      <h2>On this PC</h2>
+      <p class="muted" style="margin-bottom:8px">Nothing to do here unless a line says otherwise.</p>
       <div id="net-facts"></div>
       <div class="toolbar" style="margin-top:12px; margin-bottom:0">
         <button type="button" class="small" id="net-refresh">Refresh</button>
@@ -812,6 +851,13 @@ function showOverrideInfo(overrides) {
 // ---- network help and game version ----
 const factRow = (label, value) => el('div', { style: 'display:grid; grid-template-columns: 200px 1fr; gap: 4px 12px; padding: 4px 0; border-top: 1px solid var(--color-border)' },
   el('div', { class: 'muted', text: label }), el('div', {}, value));
+// One row of "what to type into the router": label, the value (large, copyable) and an optional hint.
+function valRow(label, value, hint, copy) {
+  const v = value ? el('div', {}, el('div', { class: 'val', text: value }), hint ? el('div', { class: 'muted', text: hint }) : null) : el('div', { class: 'muted', text: 'could not be read' });
+  const btn = copy && value ? el('button', { type: 'button', class: 'small', text: 'Copy', title: 'Copy to the clipboard',
+    onclick: async e => { try { await navigator.clipboard.writeText(value); e.target.textContent = 'Copied'; setTimeout(() => { e.target.textContent = 'Copy'; }, 1500); } catch { e.target.textContent = 'Select it instead'; } } }) : el('span');
+  return el('div', { class: 'fact' }, el('div', { class: 'muted', text: label }), v, btn);
+}
 const okText = (t, good) => el('span', { text: t, style: 'color: var(--color-accent-' + (good ? 'green' : 'red') + ')' });
 
 const STALE = 'This page is being served by an older copy of the settings program (it does not know about the Network & version tab). Close it and start it again (Start.cmd, or scripts\\ui.ps1); a running game server is not affected.';
@@ -850,15 +896,25 @@ async function loadNetwork() {
     const L = n.local || {}, r = n.reachability || {};
     const advertised = r.running && r.address ? [factRow('Address the server advertises', el('span', {}, el('b', { text: r.address }),
       el('span', { class: 'muted', text: r.privateEndpoint ? '  (a private address: players outside cannot reach it)' : '  (your public internet address; friends connect to this)' })))] : [];
+    // Router steps: the exact values to type into the router's page.
+    $('net-router').replaceChildren(L.gateway
+      ? el('a', { href: 'http://' + L.gateway, target: '_blank', rel: 'noopener', text: 'http://' + L.gateway, style: 'color: var(--color-accent-blue); font-weight:700' })
+      : el('span', { class: 'muted', text: 'address could not be read (it is usually printed on the router)' }));
+    $('net-step1').replaceChildren(
+      valRow('This PC’s name', L.hostname),
+      valRow('Its network (MAC) address', L.mac, 'The router may list devices by name or by this number, with : or - between the pairs.'),
+      valRow('Reserve this address', L.ip, '', true));
+    $('net-step1-state').textContent = L.dhcp === true ? 'Right now the router chooses this PC’s address, so it could change. That is what step 1 prevents.'
+      : L.dhcp === false ? 'This PC’s address is set by hand in Windows, so it will not change by itself. Step 1 is then optional, but reserving it in the router is still the safest.' : '';
+    $('net-step2').replaceChildren(
+      valRow('Protocol', n.protocol, 'UDP only. If the router offers TCP, UDP or Both, choose UDP (Both also works).'),
+      valRow('External / public port', String(n.port), '', true),
+      valRow('Internal / private port', String(n.port), '', true),
+      valRow('Send to this IP address', L.ip, 'The address from step 1.', true));
+    $('net-range').textContent = n.port + ' to ' + n.port;
     $('net-facts').replaceChildren(
-      factRow('Forward this port', el('b', { text: n.protocol + ' ' + n.port })),
-      factRow('To this PC’s address', L.ip ? el('span', {}, el('b', { text: L.ip }), el('span', { class: 'muted', text: '  (' + (L.adapter || 'network') + ')' })) : okText('could not be read', false)),
-      factRow('Fixed address?', L.dhcp === false ? okText('Yes, set on this PC.', true)
-        : L.dhcp === true ? el('span', { text: 'The router chooses it. Reserve it in the router (DHCP reservation) so it stays ' + (L.ip || 'the same') + '.' })
-        : el('span', { class: 'muted', text: 'unknown' })),
-      factRow('Your router', L.gateway ? el('span', {}, el('a', { href: 'http://' + L.gateway, target: '_blank', rel: 'noopener', text: 'http://' + L.gateway, style: 'color: var(--color-accent-blue)' }), el('span', { class: 'muted', text: '  (probably; sign-in is often on a sticker)' })) : el('span', { class: 'muted', text: 'unknown' })),
-      factRow('Windows Firewall', n.firewallRule === true ? okText('UDP ' + n.port + ' is open.', true)
-        : n.firewallRule === false ? okText('UDP ' + n.port + ' is NOT open. Run Start.cmd (setup) again, or run scripts\\firewall.ps1 as Administrator.', false)
+      factRow('Windows Firewall', n.firewallRule === true ? okText('UDP ' + n.port + ' is open on this PC.', true)
+        : n.firewallRule === false ? okText('UDP ' + n.port + ' is NOT open. Run Start.cmd (setup) again, or run scripts\firewall.ps1 as Administrator.', false)
         : el('span', { class: 'muted', text: 'could not check' })),
       ...advertised);
     NET_FINAL = !r.running || r.status !== 'unknown';   // nothing more to wait for

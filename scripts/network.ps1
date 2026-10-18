@@ -13,13 +13,14 @@ function Get-WfGamePort([string]$InstanceDir) {
 
 # This PC's address on the network the router hands out, the router's address, and whether the address is fixed.
 function Get-WfLocalNetwork {
-    $r = [ordered]@{ ip = ''; gateway = ''; adapter = ''; dhcp = $null }
+    $r = [ordered]@{ ip = ''; gateway = ''; adapter = ''; mac = ''; hostname = [string]$env:COMPUTERNAME; dhcp = $null }
     try {
         $cfg = @(Get-NetIPConfiguration -ErrorAction Stop | Where-Object { $_.IPv4DefaultGateway -and $_.NetAdapter.Status -eq 'Up' }) | Select-Object -First 1
         if ($cfg) {
             $r.ip = [string]@($cfg.IPv4Address)[0].IPAddress
             $r.gateway = [string]@($cfg.IPv4DefaultGateway)[0].NextHop
             $r.adapter = [string]$cfg.InterfaceAlias
+            $r.mac = [string]$cfg.NetAdapter.MacAddress
             $iface = Get-NetIPInterface -InterfaceIndex $cfg.InterfaceIndex -AddressFamily IPv4 -ErrorAction SilentlyContinue
             if ($iface) { $r.dhcp = ([string]$iface.Dhcp -eq 'Enabled') }
         }
