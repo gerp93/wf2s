@@ -842,21 +842,27 @@ const NET_ADVICE = {
     '4. Your router’s own internet address is a public one. If it starts with 10., 192.168., 172.16–31. or 100.64–127., your provider shares one address between many customers (CGNAT). No setting on your side can fix that; ask the provider for a public address, or host elsewhere.']
 };
 async function loadNetwork() {
+  NET_LOADING = true; NET_LAST = Date.now();
   $('net-refresh').disabled = true; $('net-when').textContent = 'reading…';
   try {
     const [n, st] = await Promise.all([api('/api/network'), api('/api/state')]);
     showBuild(st.build);
     const L = n.local || {}, r = n.reachability || {};
+    const advertised = r.running && r.address ? [factRow('Address the server advertises', el('span', {}, el('b', { text: r.address }),
+      el('span', { class: 'muted', text: r.privateEndpoint ? '  (a private address: players outside cannot reach it)' : '  (your public internet address; friends connect to this)' })))] : [];
     $('net-facts').replaceChildren(
       factRow('Forward this port', el('b', { text: n.protocol + ' ' + n.port })),
       factRow('To this PC’s address', L.ip ? el('span', {}, el('b', { text: L.ip }), el('span', { class: 'muted', text: '  (' + (L.adapter || 'network') + ')' })) : okText('could not be read', false)),
       factRow('Fixed address?', L.dhcp === false ? okText('Yes, set on this PC.', true)
         : L.dhcp === true ? el('span', { text: 'The router chooses it. Reserve it in the router (DHCP reservation) so it stays ' + (L.ip || 'the same') + '.' })
         : el('span', { class: 'muted', text: 'unknown' })),
-      factRow('Your router', L.gateway ? el('span', {}, el('a', { href: 'http://' + L.gateway, target: '_blank', rel: 'noopener', text: 'http://' + L.gateway }), el('span', { class: 'muted', text: '  (probably; sign-in is often on a sticker)' })) : el('span', { class: 'muted', text: 'unknown' })),
+      factRow('Your router', L.gateway ? el('span', {}, el('a', { href: 'http://' + L.gateway, target: '_blank', rel: 'noopener', text: 'http://' + L.gateway, style: 'color: var(--color-accent-blue)' }), el('span', { class: 'muted', text: '  (probably; sign-in is often on a sticker)' })) : el('span', { class: 'muted', text: 'unknown' })),
       factRow('Windows Firewall', n.firewallRule === true ? okText('UDP ' + n.port + ' is open.', true)
         : n.firewallRule === false ? okText('UDP ' + n.port + ' is NOT open. Run Start.cmd (setup) again, or run scripts\\firewall.ps1 as Administrator.', false)
-        : el('span', { class: 'muted', text: 'could not check' })));
+        : el('span', { class: 'muted', text: 'could not check' })),
+      ...advertised);
+    NET_FINAL = !r.running || r.status !== 'unknown';   // nothing more to wait for
+    NET_RUNNING = !!r.running;
     const advice = [];
     let verdict, good = false;
     if (!r.running) verdict = 'The server is not running, so there is nothing to test yet. Start it and look here again.';
@@ -872,9 +878,21 @@ async function loadNetwork() {
     $('net-advice').replaceChildren(...advice.map(t => el('p', { class: 'muted', style: 'margin-bottom:4px', text: t })), ...printed);
     $('net-when').textContent = 'read at ' + new Date().toLocaleTimeString();
   } catch (e) { $('net-when').textContent = ''; notice(/not found/i.test(e.message) ? STALE : 'Could not read the network details: ' + e.message); }
-  $('net-refresh').disabled = false;
+  $('net-refresh').disabled = false; NET_LOADING = false;
 }
 $('net-refresh').addEventListener('click', loadNetwork);
+// Keep the tab current without clicking Refresh: while it is showing, check (cheaply) every 5 s whether the server started or
+// stopped, and while a running server has not printed its verdict yet, re-read its console every 10 s.
+let NET_FINAL = false, NET_RUNNING = null, NET_LAST = 0, NET_LOADING = false;
+setInterval(async () => {
+  if ($('tab-network').hidden || document.hidden || NET_LOADING) return;
+  try {
+    const running = !!(await api('/api/state')).running;
+    setStatus(running);
+    const waiting = running && !NET_FINAL && Date.now() - NET_LAST > 10000;
+    if (running !== NET_RUNNING || waiting) await loadNetwork();
+  } catch { /* keep what is shown */ }
+}, 5000);
 $('build-update').addEventListener('click', async () => {
   if (dirty.size && !confirm('You have unsaved changes on this page. They stay unsaved while the server updates. Continue?')) return;
   const running = SERVER_RUNNING;

@@ -70,6 +70,10 @@ try {
     Check 'console: reachable via UPnP (last verdict wins)' { $rs.status -eq 'reachable' -and $rs.upnp -eq $true -and $rs.endpoint -eq '203.0.113.9' -and -not $rs.privateEndpoint }
     $rs = ConvertFrom-WfConsoleReachability @('Router port forwarded using UPnP. External endpoint at 100.72.1.4:30100.')
     Check 'console: CGNAT address flagged' { $rs.privateEndpoint -and $rs.status -eq 'unknown' }
+    $rs = ConvertFrom-WfConsoleReachability @('Router port forwarding using UPnP unavailable. Use manual port forwarding if needed. [code: 30]', 'Server is reachable from public network.', 'Server address set to: 203.0.113.9:30100', 'Server Started')
+    Check 'console: advertised public address' { $rs.status -eq 'reachable' -and $rs.address -eq '203.0.113.9' -and -not $rs.privateEndpoint }
+    $rs = ConvertFrom-WfConsoleReachability @('Server is unreachable.', 'Server address set to: 10.1.2.3:30100')
+    Check 'console: advertised private address flagged' { $rs.privateEndpoint -and $rs.address -eq '10.1.2.3' }
     Check 'console: nothing printed yet' { (ConvertFrom-WfConsoleReachability @('> ', 'Server Started')).status -eq 'unknown' }
     Check 'game port read'              { (Get-WfGamePort $dir) -eq 30100 }
     Check 'known build file readable'   { (Get-WfKnownBuild $Root).buildid -match '^\d+$' }

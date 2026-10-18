@@ -47,25 +47,35 @@ function Test-WfPrivateAddress([string]$Ip) {
 #   "Router port forwarded using UPnP. External endpoint at <ip:port>."   "Router port forwarding using UPnP unavailable..."
 # (the exact texts come from the server program). status: running=$false (no server), 'reachable', 'unreachable', 'unknown' (no verdict printed yet).
 function ConvertFrom-WfConsoleReachability([string[]]$Screen) {
-    $r = [ordered]@{ status = 'unknown'; upnp = $null; endpoint = ''; privateEndpoint = $false; lines = @() }
-    $keep = @($Screen | Where-Object { $_ -match 'reachable|unreachable|UPnP' })
+    $r = [ordered]@{ status = 'unknown'; upnp = $null; endpoint = ''; address = ''; privateEndpoint = $false; lines = @() }
+    $keep = @($Screen | Where-Object { $_ -match 'reachable|unreachable|UPnP|Server address set to' })
     $r.lines = @($keep | ForEach-Object { $_.Trim() } | Select-Object -Last 6)
     foreach ($l in $keep) {   # the last verdict on screen wins
         if ($l -match 'Server is reachable from public network') { $r.status = 'reachable' }
         elseif ($l -match 'Server is unreachable') { $r.status = 'unreachable' }
-        if ($l -match 'forwarded using UPnP\. External endpoint at\s+([0-9.]+)(?::\d+)?') { $r.upnp = $true; $r.endpoint = $Matches[1]; $r.privateEndpoint = [bool](Test-WfPrivateAddress $Matches[1]) }
+        if ($l -match 'forwarded using UPnP\. External endpoint at\s+([0-9.]+)(?::\d+)?') { $r.upnp = $true; $r.endpoint = $Matches[1] }
         elseif ($l -match 'UPnP unavailable') { $r.upnp = $false }
+        if ($l -match 'Server address set to:\s*([0-9.]+)(?::\d+)?') { $r.address = $Matches[1] }   # the address the server advertises
     }
+    # A private address here (10.x, 192.168.x, 100.64-127.x ...) means no port forward can work.
+    $r.privateEndpoint = [bool](($r.endpoint -and (Test-WfPrivateAddress $r.endpoint)) -or ($r.address -and (Test-WfPrivateAddress $r.address)))
     $r
 }
 
+# The server prints its verdict once, a few seconds after it starts, and the console window then fills with other output
+# (cars loading, chat) that pushes it out of view. So the verdict is remembered per server process.
+$script:WfReachCache = @{}
+
 function Get-WfReachability([string]$InstanceDir) {
-    $r = [ordered]@{ running = $false; status = 'unknown'; upnp = $null; endpoint = ''; privateEndpoint = $false; lines = @(); error = '' }
+    $r = [ordered]@{ running = $false; status = 'unknown'; upnp = $null; endpoint = ''; address = ''; privateEndpoint = $false; lines = @(); error = '' }
     $proc = Find-WfServerProcess $InstanceDir
     if (-not $proc) { return $r }
     $r.running = $true
+    $key = "$($proc.ProcessId)-$($proc.CreationDate.Ticks)"
     try { $screen = @(Invoke-WfConsole ([int]$proc.ProcessId) @() 400) } catch { $r.error = $_.Exception.Message; return $r }
     $parsed = ConvertFrom-WfConsoleReachability $screen
+    if ($parsed.status -ne 'unknown') { $script:WfReachCache[$key] = $parsed }
+    elseif ($script:WfReachCache.ContainsKey($key)) { $parsed = $script:WfReachCache[$key] }
     foreach ($k in $parsed.Keys) { $r[$k] = $parsed[$k] }
     $r
 }
