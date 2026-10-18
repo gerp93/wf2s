@@ -110,14 +110,42 @@ function Get-WfKnownBuild([string]$Root) {
     [pscustomobject]@{ buildid = ''; checked = '' }
 }
 
-function Get-WfBuildInfo([string]$Root, [string]$ServerDir) {
+# The game version players see (e.g. 0.377396) is in the title of the running server's window: "Wreckfest 2 | 0.377396" (the
+# server's own `version` command prints the same number as 377396-pc-final). Reading the title types nothing into the server.
+function ConvertFrom-WfWindowTitle([string]$Title) {
+    if ($Title -match '\|\s*(\d+\.\d+)\s*$') { return $Matches[1] }
+    ''
+}
+
+# The installed game version. Only a running server shows it, so it is remembered (game-version.local, with the server build it
+# was seen on) and used again while the server is stopped, as long as the server build has not changed since.
+function Get-WfGameVersion([string]$Root, [string]$InstanceDir, [string]$Build) {
+    $file = Join-Path $Root 'game-version.local'
+    $proc = if ($InstanceDir) { Find-WfServerProcess $InstanceDir } else { $null }
+    if ($proc) {
+        $v = ConvertFrom-WfWindowTitle ([string](Get-Process -Id ([int]$proc.ProcessId) -ErrorAction SilentlyContinue).MainWindowTitle)
+        if ($v) {
+            try { [IO.File]::WriteAllText($file, (ConvertTo-Json @{ buildid = $Build; version = $v }), (New-Object Text.UTF8Encoding $false)) } catch { }
+            return $v
+        }
+    }
+    if ($Build -and (Test-Path $file)) {
+        try { $saved = Read-WfJson $file; if ([string]$saved.buildid -eq $Build) { return [string]$saved.version } } catch { }
+    }
+    ''
+}
+
+function Get-WfBuildInfo([string]$Root, [string]$ServerDir, [string]$InstanceDir = '') {
     $installed = Get-WfInstalledBuild $ServerDir
     $known = Get-WfKnownBuild $Root
+    $game = Get-WfGameVersion $Root $InstanceDir $installed
     [ordered]@{
         installed    = $installed
+        gameVersion  = $game
         known        = [string]$known.buildid
+        knownGame    = [string]$known.gameVersion
         knownChecked = [string]$known.checked
-        differs      = [bool]($installed -and $known.buildid -and $installed -ne [string]$known.buildid)
+        differs      = [bool](($installed -and $known.buildid -and $installed -ne [string]$known.buildid) -or ($game -and $known.gameVersion -and $game -ne [string]$known.gameVersion))
         steamUser    = (Get-WfSteamUser $Root)
     }
 }

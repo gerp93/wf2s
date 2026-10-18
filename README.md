@@ -253,9 +253,10 @@ Things to know:
   requests to outside services. Before the server prints a verdict it says "no result yet"; click Refresh.
   Tested here: the console-text parsing, with the server's exact messages (taken from the server program) as test input; the tab
   against a running local-only server (which never prints a verdict, so only the "no result" case was seen live).
-- **Game version:** the installed Steam build id (`server\steamapps\appmanifest_3519390.acf`) against the build this app was last
-  checked against (`defaults/known-build.json`; a banner warns when they differ, because the reverse-engineered formats and string
-  tables may have changed). **Update server** stops the server after asking, then opens `scripts\update.ps1` in its own window
+- **Game version:** shows what this app was **tested up to** (game version and server build, from `defaults/known-build.json`),
+  and what is installed: the Steam server build (`server\steamappsppmanifest_3519390.acf`) and the game version players see
+  (read from the running server's window title, then remembered in `game-version.local` for as long as the server build is the same). A banner warns when either
+  differs from what was tested, because the reverse-engineered formats and string tables may have changed. **Update server** stops the server after asking, then opens `scripts\update.ps1` in its own window
   (SteamCMD may need a Steam Guard code); start the server again from the header when it finishes. It needs the Steam account name
   that `install.ps1` saved in `steam-user.local`; the button explains this when it is missing. The update path has not been run end to end.
 

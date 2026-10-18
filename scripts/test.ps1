@@ -75,6 +75,8 @@ try {
     $rs = ConvertFrom-WfConsoleReachability @('Server is unreachable.', 'Server address set to: 10.1.2.3:30100')
     Check 'console: advertised private address flagged' { $rs.privateEndpoint -and $rs.address -eq '10.1.2.3' }
     Check 'console: nothing printed yet' { (ConvertFrom-WfConsoleReachability @('> ', 'Server Started')).status -eq 'unknown' }
+    Check 'game version from window title'  { (ConvertFrom-WfWindowTitle 'Wreckfest 2 | 0.377396') -eq '0.377396' -and (ConvertFrom-WfWindowTitle 'Command Prompt') -eq '' }
+    Check 'known build names a game version' { (Get-WfKnownBuild $Root).gameVersion -match '^\d+\.\d+$' }
     Check 'game port read'              { (Get-WfGamePort $dir) -eq 30100 }
     Check 'known build file readable'   { (Get-WfKnownBuild $Root).buildid -match '^\d+$' }
 

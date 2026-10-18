@@ -79,7 +79,7 @@ function Handle($ctx) {
             passwordSet = (Test-WfPasswordSet $save)
             passwordHistory = @(Read-WfPasswordHistory $save)
             running   = [bool](Find-WfServerProcess $save)   # this instance's own server, not just any Wreckfest2.exe
-            build     = (Get-WfBuildInfo $Root $Server)
+            build     = (Get-WfBuildInfo $Root $Server $save)
         })
     }
     if ($req.HttpMethod -eq 'PUT' -and $path -eq '/api/overrides') {
