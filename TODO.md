@@ -9,7 +9,7 @@ What is not built or not verified yet. See [docs/distribution-plan.md](docs/dist
 - The server's own "reachable / unreachable" lines on a real online server: the Network tab's parser is tested against the exact
   message texts from the server program, but the live case has not been seen.
 - **Update server** end to end (stop, SteamCMD update window, start again).
-- The first **release** (Actions > Release) and a download of its zip on another PC.
+- The first **release** (Auto Release runs on every push to `main`; Cut Release for a chosen number) and a download of its zip on another PC.
 
 ## Decisions still open
 - Can the "Wreckfest 2 Dedicated Server" tool be installed from a Steam library (Library > Tools, or `steam://install/3519390`) on a PC

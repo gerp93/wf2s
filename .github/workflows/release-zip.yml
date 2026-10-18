@@ -1,13 +1,14 @@
-# Manual release: Actions > Release > Run workflow, give a version like 1.2.3.
-# Runs the checks, builds the zip from the tracked files (scripts/package.ps1 refuses to ship personal or game files),
-# tags the commit and publishes a GitHub release with the zip attached.
-name: Release
+# The build-and-publish half of a release, shared by auto-release.yml and cut-release.yml (same shape as the
+# release-<variant>.yml workflows in KVG_Standards, which have no PowerShell-zip variant yet; to move to one later,
+# change the `uses:` line in the two callers). Checks out the tag, runs the checks, builds the zip from the tracked
+# files (scripts/package.ps1 refuses personal or game files) and publishes a GitHub release with the zip attached.
+name: Release (zip)
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       version:
-        description: 'Version to release, e.g. "1.2.3" or "v1.2.3"'
+        description: 'Tag to release, e.g. v1.2.3 (already created)'
         required: true
         type: string
 
@@ -20,23 +21,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.version }}
           fetch-depth: 0
-
-      - name: Validate version
-        id: version
-        shell: bash
-        run: |
-          RAW="${{ inputs.version }}"
-          VERSION="v${RAW#v}"
-          if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Invalid version '$RAW': expected X.Y.Z or vX.Y.Z." >&2
-            exit 1
-          fi
-          if git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null; then
-            echo "Tag $VERSION already exists." >&2
-            exit 1
-          fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Checks
         shell: powershell
@@ -44,7 +30,7 @@ jobs:
 
       - name: Build the zip
         shell: powershell
-        run: .\scripts\package.ps1 -Version "${{ steps.version.outputs.version }}"
+        run: .\scripts\package.ps1 -Version "${{ inputs.version }}"
 
       - name: Release notes
         shell: bash
@@ -52,7 +38,7 @@ jobs:
           cat > release-notes.md <<'NOTES'
           ## Install
 
-          1. Download `wf2s-${{ steps.version.outputs.version }}.zip` below, right-click it, **Extract All**.
+          1. Download `wf2s-${{ inputs.version }}.zip` below, right-click it, **Extract All**.
           2. Double-click `Start.cmd`. Windows may say "Windows protected your PC" because the file came from the internet:
              click **More info**, then **Run anyway** (the scripts are plain text you can read).
           3. Answer the questions (Steam account name, server name, server password). Windows asks once to open the firewall port.
@@ -67,5 +53,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${{ steps.version.outputs.version }}" "dist/wf2s-${{ steps.version.outputs.version }}.zip" \
-            --target "$GITHUB_SHA" --title "${{ steps.version.outputs.version }}" --notes-file release-notes.md --generate-notes
+          gh release create "${{ inputs.version }}" "dist/wf2s-${{ inputs.version }}.zip" \
+            --verify-tag --title "${{ inputs.version }}" --notes-file release-notes.md --generate-notes
