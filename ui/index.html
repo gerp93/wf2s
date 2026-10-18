@@ -224,7 +224,7 @@
       <h2>Game version</h2>
       <div id="build-facts"></div>
       <div id="update-facts"></div>
-      <div class="toolbar" style="margin-top:12px; margin-bottom:0">
+      <div class="toolbar" id="build-update-row" style="margin-top:12px; margin-bottom:0">
         <button type="button" class="small" id="build-update">Update server</button>
         <span class="muted">Stops the server, then downloads the latest version of the server from Steam.</span>
         <span class="muted" id="build-update-why" style="color: var(--color-accent-red)"></span>
@@ -1022,13 +1022,15 @@ function renderUpdates() {
   if (l && l.clientUpdateAvailable) lines.push(el('div', {}, el('b', { text: 'Wreckfest 2 on this PC has an update.' }), ' Open Steam to install it so you can still join your own server.'));
   $('update-banner').replaceChildren(...lines);
   $('build-update').classList.toggle('dirty', !!(l && l.updateAvailable));
+  // Offer the update only when there is one. If Steam has not answered yet there is no way to know, so the button stays.
+  $('build-update-row').hidden = !!(l && l.latest && !l.updateAvailable);
 }
 async function loadLatest(force) {
   if (LATEST_BUSY) return;
   LATEST_BUSY = true;
   try {
     let l = await api('/api/latest-build');
-    const stale = !l.checked || Date.now() - Date.parse(l.checked) > 6 * 3600 * 1000;
+    const stale = !l.checked || Date.now() - Date.parse(l.checked) > 3600 * 1000;
     if ((force || stale) && !l.checking) l = await send('POST', '/api/latest-build/check', {});
     LATEST = l; renderUpdates();
     for (let i = 0; i < 40 && LATEST.checking; i++) {   // the check runs in the background: wait for its answer
@@ -1038,7 +1040,7 @@ async function loadLatest(force) {
   } catch { /* this page's settings program may be older, or Steam unreachable: keep what is shown */ }
   LATEST_BUSY = false;
 }
-setInterval(() => loadLatest(false), 6 * 3600 * 1000);
+setInterval(() => loadLatest(false), 3600 * 1000);
 
 // ---- tabs / startup ----
 function show(tab) {
