@@ -1,0 +1,17 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    # Windows PowerShell 5.1 (shell: powershell), the same one the app runs on for users.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checks (script syntax, defaults, setup, generators, settings page API, packaging)
+        shell: powershell
+        run: .\scripts\test.ps1

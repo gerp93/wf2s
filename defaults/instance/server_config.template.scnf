@@ -1,8 +1,8 @@
 {
     "net server config": [
         {
-            "name": "The McDonald Boys Server",
-            "description": "Welcome to my server!",
+            "name": "My Wreckfest 2 Server",
+            "description": "Welcome!",
             "password": "",
             "log file name": "",
             "game port": 30100

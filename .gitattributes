@@ -1,0 +1,4 @@
+* text=auto
+# Windows runs these; keep CRLF in checkouts and in the release zip
+*.cmd text eol=crlf
+*.ps1 text eol=crlf

@@ -95,6 +95,15 @@
   .cupgrid label { display: block; font-size: .75rem; color: var(--color-text-muted); margin-bottom: 2px; }
   .cupgrid .wide { grid-column: 1 / -1; }
   .loopbox { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--color-border); }
+  /* network tab: numbered router steps */
+  .step { display: grid; grid-template-columns: 40px 1fr; gap: 14px; padding: 16px 0 6px; margin-top: 16px; border-top: 1px solid var(--color-border); }
+  .step p { margin-bottom: 8px; }
+  .step h3 { font-size: 1.05rem; margin-bottom: 6px; color: var(--color-text); }
+  .stepno { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--color-accent-green); color: var(--color-accent-green); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; box-shadow: 0 0 8px var(--color-accent-green); }
+  .vals { margin: 8px 0 10px; max-width: 640px; border: 1px solid var(--color-border); border-radius: 6px; padding: 2px 12px; background: var(--color-bg); }
+  .vals .fact { display: grid; grid-template-columns: 220px 1fr auto; gap: 4px 12px; align-items: center; padding: 8px 0; border-top: 1px solid var(--color-border); }
+  .vals .fact:first-child { border-top: 0; }
+  .vals .fact .val { font-weight: 700; font-size: 1.05rem; color: var(--color-accent-blue); font-family: ui-monospace, Consolas, monospace; overflow-wrap: anywhere; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -113,9 +122,12 @@
   <button data-tab="rotation">Rotation</button>
   <button data-tab="cups">Cups</button>
   <button data-tab="password">Password</button>
+  <button data-tab="network">Network &amp; version</button>
 </nav>
 <main>
   <div id="notice" class="notice"></div>
+  <div id="build-banner" class="info"></div>
+  <div id="update-banner" class="info" style="border-style:solid; border-color:var(--color-accent-green); color:var(--color-accent-green)"></div>
 
   <div id="tab-rotation" hidden>
     <p class="muted" style="margin-bottom:12px">The default event rotation, one row per event. Changes are saved to the rotation template. Use “Apply now” (top right) to push them to a running server, otherwise they apply the next time it starts.</p>
@@ -160,6 +172,64 @@
       <h2>History</h2>
       <p class="muted" style="margin-bottom:8px">When the password was changed. Only the date and where it was changed from are kept, never the password.</p>
       <div id="pwhistory"></div>
+    </section>
+  </div>
+
+  <div id="tab-network" hidden>
+    <section class="card">
+      <h2>Make your server reachable from the internet</h2>
+      <p style="margin-bottom:8px">To make your server visible and joinable from the Wreckfest 2 lobby browser, configure the following settings in your router&rsquo;s configuration web page or mobile app.</p>
+      <div class="toolbar" style="margin-bottom:0">
+        <span>Router web page:</span>
+        <span id="net-router"></span>
+      </div>
+
+      <div class="step">
+        <div class="stepno">1</div>
+        <div>
+          <h3>Set a static IP address for this PC</h3>
+          <p class="muted">Look for <b>DHCP reservation</b>, <b>address reservation</b> or <b>static lease</b> in your router settings, pick this PC from the device list, and reserve:</p>
+          <div id="net-step1" class="vals"><div class="fact"><span class="muted">reading&hellip;</span></div></div>
+          <p id="net-step1-state" class="muted"></p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="stepno">2</div>
+        <div>
+          <h3>Forward the game port to that IP</h3>
+          <p class="muted">Add a rule under <b>Port forwarding</b> (may also be called <b>virtual server</b>, <b>port mapping</b> or <b>NAT</b> depending on your router model and manufacturer) with:</p>
+          <div id="net-step2" class="vals"><div class="fact"><span class="muted">reading&hellip;</span></div></div>
+          <p class="muted">The rule&rsquo;s name can be anything. If it asks for a port range, enter <span id="net-range"></span>.</p>
+        </div>
+      </div>
+
+      <p class="muted" style="margin:12px 0 0">Every router is different: if you can&rsquo;t find these, search the web for your router&rsquo;s model plus <b>&ldquo;port forwarding&rdquo;</b>. Then start the server and check <b>Is it working?</b> below.</p>
+    </section>
+    <section class="card">
+      <h2>On this PC</h2>
+      <div id="net-facts"></div>
+      <div class="toolbar" style="margin-top:12px; margin-bottom:0">
+        <button type="button" class="small" id="net-refresh">Refresh</button>
+        <span class="muted" id="net-when"></span>
+      </div>
+    </section>
+    <section class="card">
+      <h2>Is it working?</h2>
+      <p id="net-verdict" style="margin-bottom:8px"></p>
+      <div id="net-advice"></div>
+      <p class="muted" style="margin-top:8px">The server tests this itself a few seconds after it starts and prints the result in its window. This page only reads what the server said; it cannot test your router from outside. Playing on your own home network needs no forwarding.</p>
+    </section>
+    <section class="card">
+      <h2>Game version</h2>
+      <div id="build-facts"></div>
+      <div id="update-facts"></div>
+      <div class="toolbar" id="build-update-row" style="margin-top:12px; margin-bottom:0">
+        <button type="button" class="small" id="build-update">Update server</button>
+        <span class="muted">Stops the server, then downloads the latest version of the server from Steam.</span>
+        <span class="muted" id="build-update-why" style="color: var(--color-accent-red)"></span>
+      </div>
+      <p class="muted" style="margin-top:8px">Players and the server must be on the same game version, or players are refused when they join. Wreckfest 2 is in Early Access and updates often: update the server whenever the game updates.</p>
     </section>
   </div>
 </main>
@@ -776,10 +846,207 @@ function showOverrideInfo(overrides) {
     : '';
 }
 
+// ---- network help and game version ----
+const factRow = (label, value) => el('div', { style: 'display:grid; grid-template-columns: 200px 1fr; gap: 4px 12px; padding: 4px 0; border-top: 1px solid var(--color-border)' },
+  el('div', { class: 'muted', text: label }), el('div', {}, value));
+// One row of "what to type into the router": label, the value (large, copyable) and an optional hint.
+function valRow(label, value, hint, copy) {
+  const v = value ? el('div', {}, el('div', { class: 'val', text: value }), hint ? el('div', { class: 'muted', text: hint }) : null) : el('div', { class: 'muted', text: 'could not be read' });
+  const btn = copy && value ? el('button', { type: 'button', class: 'small', text: 'Copy', title: 'Copy to the clipboard',
+    onclick: async e => { try { await navigator.clipboard.writeText(value); e.target.textContent = 'Copied'; setTimeout(() => { e.target.textContent = 'Copy'; }, 1500); } catch { e.target.textContent = 'Select it instead'; } } }) : el('span');
+  return el('div', { class: 'fact' }, el('div', { class: 'muted', text: label }), v, btn);
+}
+const okText = (t, good) => el('span', { text: t, style: 'color: var(--color-accent-' + (good ? 'green' : 'red') + ')' });
+
+const STALE = 'This page is being served by an older copy of the settings program (it does not know about the Network & version tab). Close it and start it again (Start.cmd, or scripts\\ui.ps1); a running game server is not affected.';
+function showBuild(b) {
+  LAST_BUILD = b || null;
+  if (typeof renderUpdates === 'function') renderUpdates();
+  const banner = $('build-banner');
+  if (!b) {   // an older ui.ps1 is still running and sent no build info: say so rather than claiming the game is missing
+    banner.textContent = STALE;
+    $('build-facts').replaceChildren(el('p', { class: 'muted', text: 'Unknown: ' + STALE }));
+    $('build-update').disabled = true;
+    return;
+  }
+  const tested = (b.knownGame ? 'game version ' + b.knownGame : '') + (b.knownGame && b.known ? ' · ' : '') + (b.known ? 'server build ' + b.known : '');
+  if (!b.installed) banner.textContent = 'The game server is not installed yet. Run Start.cmd again to finish the setup.';
+  else if (b.differs) banner.textContent = 'You are on a newer or different version than this config app was tested with (' + tested + '). It should still work, but if track names look wrong or a setting is refused, check for an app update.';
+  else banner.textContent = '';
+  $('build-facts').replaceChildren(
+    factRow('This config app is tested up to', tested ? el('b', { text: tested }) : el('span', { class: 'muted', text: 'unknown' })),
+    factRow('Installed game version', b.gameVersion ? el('span', { text: b.gameVersion }) : el('span', { class: 'muted', text: b.installed ? 'shown once the server has run (players see it in the game’s window title)' : 'not installed' })),
+    factRow('Installed server build', b.installed ? el('span', { text: b.installed }) : okText('not installed', false)),
+    factRow('Steam account name', el('form', { id: 'steamform', autocomplete: 'off', style: 'display:flex; gap:8px; align-items:center; flex-wrap:wrap' },
+      el('input', { type: 'text', id: 'steamuser', value: b.steamUser || '', placeholder: 'your Steam sign-in name', maxLength: 64, style: 'width:260px' }),
+      el('button', { type: 'submit', class: 'small', text: 'Save' }),
+      el('span', { class: 'muted', text: 'Only the name, never your password. Steam asks for that itself during the update.' }))));
+  $('steamform').addEventListener('submit', async e => {
+    e.preventDefault();
+    try { showBuild(await send('PUT', '/api/steam-user', { user: $('steamuser').value.trim() })); notice('Steam account name saved.', true); }
+    catch (err) { notice('Not saved: ' + err.message); }
+  });
+  $('build-update').disabled = !b.installed || !b.steamUser;
+  $('build-update').title = '';
+  $('build-update-why').textContent = !b.installed ? '' : !b.steamUser ? 'Enter your Steam account name above and click Save to enable this button.' : '';
+}
+
+const NET_ADVICE = {
+  unreachable: ['The server tested itself and could not be reached from the internet. Check, in this order:',
+    '1. The router forward is UDP (not TCP) and uses the port above, both external and internal.',
+    '2. It points at this PC’s current address (shown above), and that address is reserved so it cannot change.',
+    '3. Windows Firewall allows the port (the line above).',
+    '4. Your router’s own internet address is a public one. If it starts with 10., 192.168., 172.16–31. or 100.64–127., your provider shares one address between many customers (CGNAT). No setting on your side can fix that; ask the provider for a public address, or host elsewhere.']
+};
+async function loadNetwork() {
+  NET_LOADING = true; NET_LAST = Date.now();
+  $('net-refresh').disabled = true; $('net-when').textContent = 'reading…';
+  try {
+    const [n, st] = await Promise.all([api('/api/network'), api('/api/state')]);
+    STEAM = st.steam || null;
+    showBuild(st.build);
+    const L = n.local || {}, r = n.reachability || {};
+    if (L.hostname === undefined) notice(STALE);   // an older settings process answered: it does not send the PC name / MAC
+    const advertised = r.running && r.address ? [factRow('Address the server advertises', el('span', {}, el('b', { text: r.address }),
+      el('span', { class: 'muted', text: r.privateEndpoint ? '  (a private address: players outside cannot reach it)' : '  (your public internet address; friends connect to this)' })))] : [];
+    // Router steps: the exact values to type into the router's page.
+    $('net-router').replaceChildren(L.gateway
+      ? el('a', { href: 'http://' + L.gateway, target: '_blank', rel: 'noopener', text: 'http://' + L.gateway, style: 'color: var(--color-accent-blue); font-weight:700' })
+      : el('span', { class: 'muted', text: 'could not be read' }));
+    $('net-step1').replaceChildren(
+      valRow('This PC’s name', L.hostname),
+      valRow('Its MAC address', L.mac, 'Some routers list devices by this.'),
+      valRow('Reserve this IP address', L.ip, '', true));
+    $('net-step1-state').textContent = L.dhcp === false ? 'This PC already has a static IP set in Windows; reserving it in the router as well is still the safest.' : '';
+    $('net-step2').replaceChildren(
+      valRow('Protocol', n.protocol, 'UDP only (not TCP)'),
+      valRow('External / public port', String(n.port), '', true),
+      valRow('Internal / private port', String(n.port), '', true),
+      valRow('Send to IP address', L.ip, '', true));
+    $('net-range').textContent = n.port + ' to ' + n.port;
+    $('net-facts').replaceChildren(
+      factRow('Windows Firewall', n.firewallRule === true ? okText('UDP ' + n.port + ' is open on this PC.', true)
+        : n.firewallRule === false ? okText('UDP ' + n.port + ' is NOT open. Run Start.cmd (setup) again, or run scripts\firewall.ps1 as Administrator.', false)
+        : el('span', { class: 'muted', text: 'could not check' })),
+      ...advertised);
+    NET_FINAL = !r.running || r.status !== 'unknown';   // nothing more to wait for
+    NET_RUNNING = !!r.running;
+    const advice = [];
+    let verdict, good = false;
+    if (!r.running) verdict = 'The server is not running, so there is nothing to test yet. Start it and look here again.';
+    else if (r.error) verdict = 'Could not read the server’s window: ' + r.error;
+    else if (r.status === 'reachable') { verdict = 'Reachable. The server says players on the internet can reach it.'; good = true; }
+    else if (r.status === 'unreachable') { verdict = 'Not reachable from the internet yet.'; advice.push(...NET_ADVICE.unreachable); }
+    else verdict = 'No result yet. The server prints one a few seconds after it starts; click Refresh in a moment.';
+    if (r.running && r.upnp === true) advice.push('Your router opened the port by itself (UPnP)' + (r.endpoint ? ', as ' + r.endpoint : '') + '.');
+    if (r.running && r.upnp === false && r.status !== 'reachable') advice.push('The router did not open the port automatically (UPnP is off or unsupported). That is normal: forward the port by hand.');
+    if (r.privateEndpoint) advice.push('Warning: the address the router reported (' + r.endpoint + ') is a private one. Your provider probably shares one internet address between customers (CGNAT), so no forward can work. Ask the provider for a public address, or host elsewhere.');
+    $('net-verdict').replaceChildren(okText(verdict, good));
+    const printed = r.lines && r.lines.length ? [el('details', {}, el('summary', { class: 'muted', text: 'What the server printed' }), el('pre', { class: 'muted', text: r.lines.join('\n'), style: 'white-space:pre-wrap' }))] : [];
+    $('net-advice').replaceChildren(...advice.map(t => el('p', { class: 'muted', style: 'margin-bottom:4px', text: t })), ...printed);
+    $('net-when').textContent = 'read at ' + new Date().toLocaleTimeString();
+  } catch (e) { $('net-when').textContent = ''; notice(/not found/i.test(e.message) ? STALE : 'Could not read the network details: ' + e.message); }
+  $('net-refresh').disabled = false; NET_LOADING = false;
+}
+$('net-refresh').addEventListener('click', loadNetwork);
+// Keep the tab current without clicking Refresh: while it is showing, check (cheaply) every 5 s whether the server started or
+// stopped, and while a running server has not printed its verdict yet, re-read its console every 10 s.
+let NET_FINAL = false, NET_RUNNING = null, NET_LAST = 0, NET_LOADING = false;
+setInterval(async () => {
+  if ($('tab-network').hidden || document.hidden || NET_LOADING) return;
+  try {
+    const running = !!(await api('/api/state')).running;
+    setStatus(running);
+    const waiting = running && !NET_FINAL && Date.now() - NET_LAST > 10000;
+    if (running !== NET_RUNNING || waiting) await loadNetwork();
+  } catch { /* keep what is shown */ }
+}, 5000);
+$('build-update').addEventListener('click', async () => {
+  if (dirty.size && !confirm('You have unsaved changes on this page. They stay unsaved while the server updates. Continue?')) return;
+  const running = SERVER_RUNNING;
+  if (!confirm((running ? 'The server will be stopped and everyone connected is disconnected.\n\n' : '') + 'Open the Steam download in a new window now?\n\nSteam may ask for your password or a Steam Guard code there.')) return;
+  $('build-update').disabled = true;
+  try {
+    if (running) {
+      const s = await send('POST', '/api/server/stop', {});
+      if (s.stillRunning) {
+        if (!confirm(s.message + '\n\nForce it to stop now?')) { notice(s.message); return; }
+        await send('POST', '/api/server/stop', { force: true });
+      }
+      await pollStatus();
+    }
+    const r = await send('POST', '/api/server/update', {});
+    notice(r.message + ' Then click “Refresh” here to see the new build.', true);
+  } catch (e) { notice('Could not update: ' + e.message); }
+  finally { $('build-update').disabled = false; }
+});
+
+// ---- is there a newer build? ----
+// Asks Steam (through the settings program, in the background) for the newest public server and game builds: once when the page
+// opens, again every 6 hours, and on "Check now". Suggests updating only when a newer build exists.
+let LATEST = null, STEAM = null, LAST_BUILD = null, LATEST_BUSY = false;
+const STEAM_DOWNLOAD = 'https://store.steampowered.com/about/';
+function goToUpdate() { show('network'); setTimeout(() => $('build-update').scrollIntoView({ block: 'center' }), 50); }
+function renderUpdates() {
+  const b = LAST_BUILD, l = LATEST, st = STEAM;
+  if (!b || !b.installed) { $('update-facts').replaceChildren(); $('update-banner').replaceChildren(); return; }
+  const when = l && l.checked ? new Date(l.checked).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '';
+  const checkBtn = el('button', { type: 'button', class: 'small', text: l && l.checking ? 'Checking…' : 'Check now', disabled: !!(l && l.checking),
+    onclick: () => loadLatest(true) });
+  let latestVal;
+  if (!l) latestVal = el('span', { class: 'muted', text: 'checking…' });
+  else if (l.checking && !l.latest) latestVal = el('span', { class: 'muted', text: 'asking Steam…' });
+  else if (!l.latest) latestVal = el('span', { class: 'muted', text: l.error || 'not checked yet' });
+  else latestVal = el('span', {}, el('b', { text: l.latest }), '  ', l.updateAvailable ? okText('a newer server build is available', false) : okText('you are up to date', true),
+    el('span', { class: 'muted', text: when ? '  (checked ' + when + (l.error ? '; last check failed: ' + l.error : '') + ')' : '' }));
+  const rows = [factRow('Latest server build', el('span', { style: 'display:flex; gap:12px; align-items:center; flex-wrap:wrap' }, latestVal, checkBtn))];
+  if (st) {
+    rows.push(factRow('Steam on this PC', st.installed
+      ? okText('installed', true)
+      : el('span', {}, okText('not installed', false), '  ', el('a', { href: STEAM_DOWNLOAD, target: '_blank', rel: 'noopener', text: 'Install Steam', style: 'color: var(--color-accent-blue)' }),
+        el('span', { class: 'muted', text: '  You need it to play the game. Downloading the server does not use it.' }))));
+    if (st.installed) {
+      const gameVal = !st.gameInstalled
+        ? el('span', { class: 'muted', text: 'not installed in Steam (only needed to play on this PC; hosting does not need it)' })
+        : l && l.clientUpdateAvailable
+          ? el('span', {}, okText('an update is available', false), el('span', { class: 'muted', text: '  Steam normally installs it by itself; open Steam to check. ' }),
+              el('a', { href: 'steam://nav/downloads', text: 'Open Steam downloads', style: 'color: var(--color-accent-blue)' }))
+          : el('span', {}, okText(l && l.clientLatest ? 'up to date' : 'installed', true), el('span', { class: 'muted', text: '  (build ' + st.gameBuild + ')' }));
+      rows.push(factRow('Wreckfest 2 on this PC', gameVal));
+    }
+  }
+  $('update-facts').replaceChildren(...rows);
+  const lines = [];
+  if (l && l.updateAvailable) lines.push(el('div', {}, el('b', { text: 'A server update is available.' }), ' Players on the newest game version cannot join until the server is updated (yours: build ' + b.installed + ', newest: ' + l.latest + '). ',
+    el('button', { type: 'button', class: 'small', text: 'Update server…', onclick: goToUpdate })));
+  if (l && l.clientUpdateAvailable) lines.push(el('div', {}, el('b', { text: 'Wreckfest 2 on this PC has an update.' }), ' Open Steam to install it so you can still join your own server.'));
+  $('update-banner').replaceChildren(...lines);
+  $('build-update').classList.toggle('dirty', !!(l && l.updateAvailable));
+  // Offer the update only when there is one. If Steam has not answered yet there is no way to know, so the button stays.
+  $('build-update-row').hidden = !!(l && l.latest && !l.updateAvailable);
+}
+async function loadLatest(force) {
+  if (LATEST_BUSY) return;
+  LATEST_BUSY = true;
+  try {
+    let l = await api('/api/latest-build');
+    const stale = !l.checked || Date.now() - Date.parse(l.checked) > 3600 * 1000;
+    if ((force || stale) && !l.checking) l = await send('POST', '/api/latest-build/check', {});
+    LATEST = l; renderUpdates();
+    for (let i = 0; i < 40 && LATEST.checking; i++) {   // the check runs in the background: wait for its answer
+      await new Promise(r => setTimeout(r, 3000));
+      LATEST = await api('/api/latest-build'); renderUpdates();
+    }
+  } catch { /* this page's settings program may be older, or Steam unreachable: keep what is shown */ }
+  LATEST_BUSY = false;
+}
+setInterval(() => loadLatest(false), 3600 * 1000);
+
 // ---- tabs / startup ----
 function show(tab) {
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
-  for (const t of ['rotation', 'cups', 'global', 'password']) $('tab-' + t).hidden = t !== tab;
+  for (const t of ['rotation', 'cups', 'global', 'password', 'network']) $('tab-' + t).hidden = t !== tab;
+  if (tab === 'network' && typeof loadNetwork === 'function') loadNetwork();
   if (tab !== 'password' && typeof hidePassword === 'function') hidePassword();
   try { history.replaceState(null, '', '#' + tab); } catch { /* ignore */ }
 }
@@ -805,13 +1072,16 @@ async function pollStatus() { try { setStatus((await api('/api/state')).running)
     fill('dl-levels', choices.levels); fill('dl-modes', choices.modes); fill('dl-weather', choices.weather); fill('dl-ai', choices.aiSets);
     fill('dl-damage', choices.damage); fill('dl-cars', choices.cars); fill('dl-start', choices.startOrders); fill('dl-collect', choices.collectingOrders);
     fill('dl-flags', ['reverse rule']);
+    STEAM = state.steam || null;
+    showBuild(state.build);
+    loadLatest(false);
     buildGlobal(state); setStatus(state.running); showPasswordState(state.passwordSet); showPasswordHistory(state.passwordHistory);
     if (state.running) notice('The server is running. After you save, click “Apply now” to push changes to it live.');
     OVERRIDES = state.overrides || {};
     showOverrideInfo(OVERRIDES);
     await loopEditor('main', $('rot'));
     await cupsTab();
-    const t = location.hash.slice(1); show(['rotation', 'cups', 'global', 'password'].includes(t) ? t : 'global');   // Global overrides is the first tab and the one that opens
+    const t = location.hash.slice(1); show(['rotation', 'cups', 'global', 'password', 'network'].includes(t) ? t : 'global');   // Global overrides is the first tab and the one that opens
   } catch (e) { notice('Could not load settings: ' + e.message); }
   setInterval(pollStatus, 15000);
 })();

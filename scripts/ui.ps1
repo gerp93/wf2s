@@ -1,8 +1,8 @@
-# Usage: .\scripts\ui.ps1 [-Instance main] [-Port 30180] [-LocalServer]
+# Usage: .\scripts\ui.ps1 [-Instance main] [-Port 30180] [-LocalServer] [-OpenBrowser]
 # Local settings page for a server instance. Serves ./ui on http://127.0.0.1:<Port> (this PC only) and
 # reads/writes instances\<Instance>\settings.json. Changes apply the next time start.ps1 launches the server.
 # -LocalServer makes the page's Start button launch the game's local-only mode (--local-server). It is for testing.
-param([string]$Instance = 'main', [int]$Port = 30180, [switch]$LocalServer)
+param([string]$Instance = 'main', [int]$Port = 30180, [switch]$LocalServer, [switch]$OpenBrowser)
 . "$PSScriptRoot\common.ps1"
 . "$PSScriptRoot\settings.ps1"
 $save  = Get-WfInstanceDir $Root $Instance
@@ -79,6 +79,8 @@ function Handle($ctx) {
             passwordSet = (Test-WfPasswordSet $save)
             passwordHistory = @(Read-WfPasswordHistory $save)
             running   = [bool](Find-WfServerProcess $save)   # this instance's own server, not just any Wreckfest2.exe
+            build     = (Get-WfBuildInfo $Root $Server $save)
+            steam     = (Get-WfSteamClient)
         })
     }
     if ($req.HttpMethod -eq 'PUT' -and $path -eq '/api/overrides') {
@@ -87,6 +89,16 @@ function Handle($ctx) {
         try { $saved = Write-WfOverrides $save (Read-Body $req).overrides }
         catch { return SendJson $ctx 400 @{ error = $_.Exception.Message } }
         return SendJson $ctx 200 @{ overrides = $saved }
+    }
+    if ($req.HttpMethod -eq 'GET' -and $path -eq '/api/network') {
+        # Slow-ish (it reads the server console), so the page asks only when the Network tab is open or Refresh is clicked.
+        try { return SendJson $ctx 200 (Get-WfNetworkInfo $save) }
+        catch { return SendJson $ctx 500 @{ error = $_.Exception.Message } }
+    }
+    if ($req.HttpMethod -eq 'GET' -and $path -eq '/api/latest-build') {
+        # The last answer from Steam about the newest server/game builds (read from a file; the check itself runs in the background).
+        try { return SendJson $ctx 200 (Get-WfLatestBuild $Root $Server) }
+        catch { return SendJson $ctx 500 @{ error = $_.Exception.Message } }
     }
     if ($req.HttpMethod -eq 'GET' -and $path -eq '/api/choices') { return SendJson $ctx 200 (Get-WfChoices $save $Server) }
     if ($req.HttpMethod -eq 'GET' -and $path -eq '/api/loop') {
@@ -132,6 +144,24 @@ function Handle($ctx) {
         try { $b = Read-Body $req; return SendJson $ctx 200 (Stop-WfServer $save -Force:([bool]$b.force)) }
         catch { return SendJson $ctx 500 @{ error = $_.Exception.Message } }
     }
+    if ($req.HttpMethod -eq 'POST' -and $path -eq '/api/latest-build/check') {
+        # Starts scripts\check-update.ps1 in the background (anonymous, read-only question to Steam) and returns at once.
+        try { return SendJson $ctx 200 (Start-WfLatestBuildCheck $Root $Server) }
+        catch { return SendJson $ctx 500 @{ error = $_.Exception.Message } }
+    }
+    if ($req.HttpMethod -eq 'PUT' -and $path -eq '/api/steam-user') {
+        # Only the account NAME (never a password): it is what the Update server button gives SteamCMD, which asks for the rest itself.
+        try { Set-WfSteamUser $Root ([string](Read-Body $req).user) }
+        catch { return SendJson $ctx 400 @{ error = $_.Exception.Message } }
+        return SendJson $ctx 200 (Get-WfBuildInfo $Root $Server $save)
+    }
+    if ($req.HttpMethod -eq 'POST' -and $path -eq '/api/server/update') {
+        # Opens scripts\update.ps1 in its own window (SteamCMD may ask for a Steam Guard code). The server must be stopped first.
+        try {
+            if (Find-WfServerProcess $save) { return SendJson $ctx 409 @{ error = 'Stop the server first.' } }
+            return SendJson $ctx 200 (Start-WfUpdate $Root)
+        } catch { return SendJson $ctx 500 @{ error = $_.Exception.Message } }
+    }
     if ($req.HttpMethod -eq 'POST' -and $path -eq '/api/apply') {
         # Push the saved settings to this instance's running server (see apply.ps1).
         try { return SendJson $ctx 200 (Invoke-WfApply $save $Server) }
@@ -156,6 +186,7 @@ $listener = New-Object Net.HttpListener
 $listener.Prefixes.Add("http://127.0.0.1:$Port/")
 $listener.Start()
 Write-Host "Wreckfest 2 settings ($Instance): http://127.0.0.1:$Port/   (Ctrl+C to stop)"
+if ($OpenBrowser) { try { Start-Process "http://127.0.0.1:$Port/" } catch { Write-Host 'Open that address in your browser.' } }
 try {
     $pending = $listener.GetContextAsync()
     while ($true) {

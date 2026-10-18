@@ -184,19 +184,21 @@ function Test-WfPasswordSet([string]$InstanceDir) {
     $f = Join-Path $InstanceDir 'password.local'
     (Test-Path $f) -and ([IO.File]::ReadAllText($f).Trim() -ne '')
 }
-function Set-WfPassword([string]$InstanceDir, $Password) {
+function Set-WfPassword([string]$InstanceDir, $Password, [string]$By = 'settings page') {
     if ($Password -isnot [string]) { throw 'Password must be text.' }
     $p = $Password.Trim()
     if ($p -eq '') { throw "Password can't be empty." }
     if ($p.Length -gt 64) { throw 'Password is too long (max 64 characters).' }
     if ($p -match '[\x00-\x1f]') { throw 'Password has control characters.' }
     [IO.File]::WriteAllText((Join-Path $InstanceDir 'password.local'), $p, (New-Object Text.UTF8Encoding $false))
-    Add-WfPasswordHistory $InstanceDir 'settings page'
+    Add-WfPasswordHistory $InstanceDir $By
 }
 
 . "$PSScriptRoot\loops.ps1"   # per-event loops and cups
 . "$PSScriptRoot\apply.ps1"   # push saved settings to a running server
 . "$PSScriptRoot\server.ps1"  # start and stop a server instance
+. "$PSScriptRoot\instance.ps1" # create an instance from defaults\instance, Steam name, admins
+. "$PSScriptRoot\network.ps1"  # port forwarding help and the installed game build
 
 # Generates default_loop.becl from its template plus the overrides. No-op when there is no template.
 function Build-WfLoop([string]$InstanceDir) {

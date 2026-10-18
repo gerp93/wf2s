@@ -6,6 +6,15 @@ know, where each fact comes from, and how sure we are**, so you can go back to t
 
 - Game build these facts were collected from: **Steam build id 25956988** (`server\steamapps\appmanifest_3519390.acf`),
   `Wreckfest2.exe` 24,448,000 bytes, dated 2026-10-16. The game is in Early Access and changes often.
+- **Two version numbers.** The *server build* is the Steam build id above (25956988). The *game version* is what players see
+  (**0.377396**, the same on the client and the server): it is in the title of the running server's window (`Wreckfest 2 | 0.377396`),
+  and the server's `version` console command prints it as `377396-pc-final` (**Tested**, local test server). `defaults/known-build.json`
+  records both as what this app was last checked against; the page shows them on the Network & version tab.
+- **Newest build from Steam.** `steamcmd +login anonymous +app_info_update 1 +app_info_print <appid>` answers without an account for both
+  apps (**Tested**): the dedicated server is app **3519390**, the game itself is app **1203190**, and each has its own build id
+  (server 25956988, game 25956943 on 2026-10-18; they are not comparable with each other, only each with its own latest). The public
+  branch's `buildid` and `timeupdated` are in the `"branches"` block. The installed game's build is in
+  `steamapps\appmanifest_1203190.acf` of whichever Steam library holds it.
 - To re-read the data-file facts from whatever is installed now: `.\scripts\game-data-report.ps1`
   (prints the same numbers with the file each one came from, and flags anything the game no longer contains).
 

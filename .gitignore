@@ -2,29 +2,16 @@
 /server/
 /steamcmd/
 
-# Runtime output inside each instance's save dir
-instances/*/logs/
-instances/*/*.log
-instances/*/*.tmp
-instances/*/~Lock
-instances/*/telemetry/
+# Everything under instances/ is the host's own server: name, password, admins, rotation, cups, logs, roles/bans.
+# It is created from defaults/instance on first run (scripts/setup.ps1) and never shipped or committed.
+/instances/
 
-# Generated each start from server_config.template.scnf + password.local
-instances/*/server_config.scnf
+# Hand-made safety copy of an instance (see docs/distribution-plan.md); not part of the project
+/.personal-backup/
 
-# Generated each start from default_loop.template.becl + settings.json
-instances/*/default_loop.becl
-
-# Generated each start from server_cup_config.template.ccnl + cups\*.becl (the game reads these, from the save folder)
-instances/*/server_cup_config.ccnl
-instances/*/cups-generated/
-
-# Local secrets / overrides
+# Local secrets / overrides (password.local, steam-user.local, ...)
 *.local
 .env
 
-# Runtime roles/bans (created from server_privilege.template.sprv + admins.local)
-instances/*/server_privilege.sprv
-
-# Safety copies made by hand while recovering files; not part of the project
-instances/*/cups-backup/
+# Output of scripts/package.ps1
+/dist/
