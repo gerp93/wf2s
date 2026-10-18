@@ -866,10 +866,10 @@ function showBuild(b) {
   }
   const tested = (b.knownGame ? 'game version ' + b.knownGame : '') + (b.knownGame && b.known ? ' · ' : '') + (b.known ? 'server build ' + b.known : '');
   if (!b.installed) banner.textContent = 'The game server is not installed yet. Run Start.cmd again to finish the setup.';
-  else if (b.differs) banner.textContent = 'You are on a newer or different version than this app was tested with (' + tested + '). It should still work, but if track names look wrong or a setting is refused, check for an app update.';
+  else if (b.differs) banner.textContent = 'You are on a newer or different version than this config app was tested with (' + tested + '). It should still work, but if track names look wrong or a setting is refused, check for an app update.';
   else banner.textContent = '';
   $('build-facts').replaceChildren(
-    factRow('Tested up to', tested ? el('b', { text: tested }) : el('span', { class: 'muted', text: 'unknown' })),
+    factRow('This config app is tested up to', tested ? el('b', { text: tested }) : el('span', { class: 'muted', text: 'unknown' })),
     factRow('Installed game version', b.gameVersion ? el('span', { text: b.gameVersion }) : el('span', { class: 'muted', text: b.installed ? 'shown once the server has run (players see it in the game’s window title)' : 'not installed' })),
     factRow('Installed server build', b.installed ? el('span', { text: b.installed }) : okText('not installed', false)),
     factRow('Steam account', el('span', { text: b.steamUser || 'not saved yet' })));
