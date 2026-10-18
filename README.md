@@ -254,7 +254,7 @@ Things to know:
   Tested here: the console-text parsing, with the server's exact messages (taken from the server program) as test input; the tab
   against a running local-only server (which never prints a verdict, so only the "no result" case was seen live).
 - **Game version:** shows what this app was **tested up to** (game version and server build, from `defaults/known-build.json`),
-  and what is installed: the Steam server build (`server\steamappsppmanifest_3519390.acf`) and the game version players see
+  and what is installed: the Steam server build (`server\steamapps\appmanifest_3519390.acf`) and the game version players see
   (read from the running server's window title, then remembered in `game-version.local` for as long as the server build is the same). A banner warns when either
   differs from what was tested, because the reverse-engineered formats and string tables may have changed. **Update server** stops the server after asking, then opens `scripts\update.ps1` in its own window
   (SteamCMD may need a Steam Guard code); start the server again from the header when it finishes. It needs the Steam account name
