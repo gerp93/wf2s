@@ -1,7 +1,9 @@
 # The build-and-publish half of a release, shared by auto-release.yml and cut-release.yml (same shape as the
 # release-<variant>.yml workflows in KVG_Standards, which have no PowerShell-zip variant yet; to move to one later,
 # change the `uses:` line in the two callers). Checks out the tag, runs the checks, builds the zip from the tracked
-# files (scripts/package.ps1 refuses personal or game files) and publishes a GitHub release with the zip attached.
+# files (scripts/package.ps1 refuses personal or game files), builds the Windows installer from that zip's contents, installs it
+# on the clean runner to prove it works, and publishes a GitHub release with the installer (the download for people) and the zip
+# (what the in-app updater downloads) attached.
 name: Release (zip)
 
 on:
@@ -32,20 +34,37 @@ jobs:
         shell: powershell
         run: .\scripts\package.ps1 -Version "${{ inputs.version }}"
 
+      - name: Install Inno Setup
+        shell: powershell
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+
+      - name: Build the installer
+        shell: powershell
+        run: .\scripts\build-installer.ps1 -Version "${{ inputs.version }}" -ZipPath "dist\wf2s-${{ inputs.version }}.zip" -OutDir dist
+
+      - name: Install, check, uninstall (clean machine)
+        shell: powershell
+        run: .\scripts\test-installer.ps1 -Setup "dist\wf2s-setup-${{ inputs.version }}.exe" -Version "${{ inputs.version }}"
+
       - name: Release notes
         shell: bash
         run: |
           cat > release-notes.md <<'NOTES'
           ## Install
 
-          1. Download `wf2s-${{ inputs.version }}.zip` below, right-click it, **Extract All**.
-          2. Double-click `Start.cmd`. Windows may say "Windows protected your PC" because the file came from the internet:
-             click **More info**, then **Run anyway** (the scripts are plain text you can read).
-          3. Answer the questions (Steam account name, server name, server password). Windows asks once to open the firewall port.
-          4. Set up your router: a static IP for the PC and a forward of **UDP 30100** to it.
+          1. Download **`wf2s-setup-${{ inputs.version }}.exe`** below and run it. Windows may say "Windows protected your PC" because the
+             installer is not code-signed: click **More info**, then **Run anyway**. It installs for your user only (no administrator
+             rights) and adds a **Wreckfest 2 Server** shortcut to the Start Menu.
+          2. Tick "Set up my server now" at the end (or open the shortcut). Answer the questions: Steam account name, server name,
+             server password. Windows asks once to open the firewall port.
+          3. Set up your router: a static IP for the PC and a forward of **UDP 30100** to it. The settings page shows the exact values.
 
-          Needs a Windows 10/11 PC and a Steam account that owns Wreckfest 2. The game server downloads from Steam on your PC; it is not part of this zip.
-          Updating from an older version: extract over the old folder. Your server lives in `instances\`, which is not in the zip.
+          Needs a Windows 10/11 PC and a Steam account that owns Wreckfest 2. The game server downloads from Steam on your PC; it is not part of the installer.
+
+          **Updating:** the app updates itself. The settings page shows an **Update app** button when a newer release exists. Your server and settings are never touched.
+
+          `wf2s-${{ inputs.version }}.zip` has the same files without an installer. It is also what the in-app updater downloads, so you do not need it.
           NOTES
 
       - name: Publish
@@ -53,5 +72,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${{ inputs.version }}" "dist/wf2s-${{ inputs.version }}.zip" \
+          gh release create "${{ inputs.version }}" "dist/wf2s-setup-${{ inputs.version }}.exe" "dist/wf2s-${{ inputs.version }}.zip" \
             --verify-tag --title "${{ inputs.version }}" --notes-file release-notes.md --generate-notes

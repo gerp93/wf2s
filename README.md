@@ -11,10 +11,12 @@ Licensed under the [AGPL-3.0](LICENSE). Game files are never part of this projec
 You need: a Windows 10 or 11 PC, a Steam account that **owns Wreckfest 2**, about 6 GB of free disk space, and (for friends
 outside your home) access to your router's settings.
 
-1. **Download** the latest `wf2s-<version>.zip` from the [Releases page](https://github.com/gerp93/wf2s/releases), right-click it,
-   choose **Extract All**, and open the extracted folder. (Do not run it from inside the zip.)
-2. **Double-click `Start.cmd`.** Windows may show a blue "Windows protected your PC" box because the file came from the internet:
-   click **More info**, then **Run anyway**. The program is plain text you can read in the `scripts` folder.
+1. **Download** the latest `wf2s-setup-<version>.exe` from the [Releases page](https://github.com/gerp93/wf2s/releases) and run it.
+   Windows may show a blue "Windows protected your PC" box because the installer is not code-signed: click **More info**, then
+   **Run anyway**. It installs for your user only (no administrator rights) and adds a **Wreckfest 2 Server** shortcut to the Start Menu.
+   (Prefer no installer? `wf2s-<version>.zip` has the same files: extract it and double-click `Start.cmd`.)
+2. **Leave "Set up my server now" ticked** on the last page (or open the Start Menu shortcut later). The program is plain text you can
+   read in the `scripts` folder.
 3. **Answer the questions** in the window that opens:
    - your **Steam account name** (the one you sign in with). Steam then asks for your password, and a Steam Guard code if you use
      one, in the same window. Those go straight to Steam; this program never sees or stores them. The game server (a few GB) downloads.
@@ -26,7 +28,7 @@ outside your home) access to your router's settings.
    in the game's multiplayer server list (search for its name; passworded servers show a lock).
 6. On the page's **Network & version** tab, check that the server says it is reachable from the internet.
 
-Next time, just double-click `Start.cmd` again: it opens the settings page straight away. Closing the window closes the page only;
+Next time, open the **Wreckfest 2 Server** shortcut (or double-click `Start.cmd`): it opens the settings page straight away. Closing the window closes the page only;
 a running server keeps running in its own window.
 
 ### The router step
@@ -86,6 +88,8 @@ creates it from `defaults\instance`.
 | `scripts/game-data-report.ps1` | Re-reads the game facts the page relies on (names, lists, flags, limits) from the installed game. See [docs/game-data-sources.md](docs/game-data-sources.md). |
 | `scripts/test.ps1` | Automated checks (script syntax, defaults, setup, generators, the page's API, packaging). Needs no game and no Steam account. CI runs it. |
 | `scripts/package.ps1 [-Version v1.2.3]` | Builds `dist\wf2s-<version>.zip` from the files tracked in git and checks that nothing personal or from the game is in it. |
+| `scripts/build-installer.ps1 -Version v1.2.3 -ZipPath <zip>` | Builds the Windows installer `dist\wf2s-setup-<version>.exe` (Inno Setup 6, `installer\wf2s.iss`) from that zip's contents. |
+| `scripts/test-installer.ps1 -Setup <exe> -Version v1.2.3` | Installs the installer silently into a temp folder, checks it, uninstalls it. CI and the release workflow run it on a clean Windows machine. |
 | `scripts/update-visual-assault-css.ps1 <tag>` | Re-vendors the settings page theme from a VisualAssault tag. |
 
 ## Layout
