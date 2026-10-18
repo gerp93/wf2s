@@ -127,6 +127,7 @@
 <main>
   <div id="notice" class="notice"></div>
   <div id="build-banner" class="info"></div>
+  <div id="app-banner" class="info" style="border-style:solid; border-color:var(--color-accent-green); color:var(--color-accent-green)"></div>
   <div id="update-banner" class="info" style="border-style:solid; border-color:var(--color-accent-green); color:var(--color-accent-green)"></div>
 
   <div id="tab-rotation" hidden>
@@ -230,6 +231,14 @@
         <span class="muted" id="build-update-why" style="color: var(--color-accent-red)"></span>
       </div>
       <p class="muted" style="margin-top:8px">Players and the server must be on the same game version, or players are refused when they join. Wreckfest 2 is in Early Access and updates often: update the server whenever the game updates.</p>
+    </section>
+    <section class="card">
+      <h2>This app</h2>
+      <div id="app-facts"></div>
+      <div class="toolbar" id="app-update-row" style="margin-top:12px; margin-bottom:0" hidden>
+        <button type="button" class="small dirty" id="app-update">Update app</button>
+        <span class="muted">Downloads the newest version and restarts this page. Your server, settings and password are not touched.</span>
+      </div>
     </section>
   </div>
 </main>
@@ -987,7 +996,43 @@ $('build-update').addEventListener('click', async () => {
 let LATEST = null, STEAM = null, LAST_BUILD = null, LATEST_BUSY = false;
 const STEAM_DOWNLOAD = 'https://store.steampowered.com/about/';
 function goToUpdate() { show('network'); setTimeout(() => $('build-update').scrollIntoView({ block: 'center' }), 50); }
+// This app's own version and update (from GitHub releases), as opposed to the game's.
+function renderApp() {
+  const l = LATEST, a = l && l.app;
+  if (!a) { $('app-facts').replaceChildren(); $('app-update-row').hidden = true; $('app-banner').replaceChildren(); return; }
+  const rows = [factRow('Version', a.version ? el('b', { text: a.version }) : el('span', { class: 'muted', text: a.fromGit ? 'running from git (no release version)' : 'unknown' }))];
+  if (a.fromGit) rows.push(factRow('Updating', el('span', { class: 'muted', text: 'This copy is a git checkout. Update it with git pull.' })));
+  else if (a.latest) rows.push(factRow('Newest release', el('span', {}, el('b', { text: a.latest }), '  ',
+    a.updateAvailable ? okText('a newer version is available', false) : okText('you are up to date', true))));
+  else rows.push(factRow('Newest release', el('span', { class: 'muted', text: l.checked ? 'none found' : 'not checked yet' })));
+  $('app-facts').replaceChildren(...rows);
+  $('app-update-row').hidden = !a.updateAvailable;
+  $('app-banner').replaceChildren(...(a.updateAvailable ? [el('div', {}, el('b', { text: 'A new version of this app is available.' }),
+    ' (' + a.latest + '; yours: ' + a.version + ') It updates itself in a few seconds; your server and settings are not touched. ',
+    el('button', { type: 'button', class: 'small', text: 'Update app…', onclick: updateApp }))] : []));
+}
+async function updateApp() {
+  const a = LATEST && LATEST.app;
+  if (!a || !a.updateAvailable) return;
+  if (!confirm('Update this app from ' + a.version + ' to ' + a.latest + '?\n\nThis page restarts for a few seconds. Your server keeps running; your server settings, password and the game are not touched.')) return;
+  $('app-update').disabled = true;
+  notice('Updating the app… this page reloads when it is done.', true);
+  try { await send('POST', '/api/app/update', {}); }
+  catch (e) { notice('Could not start the update: ' + e.message); $('app-update').disabled = false; return; }
+  for (let i = 0; i < 90; i++) {   // up to 3 minutes: download, swap, restart
+    await new Promise(r => setTimeout(r, 2000));
+    try {
+      const st = await api('/api/app/update-status');
+      if (st.state === 'error') { notice('The update failed: ' + st.message); $('app-update').disabled = false; return; }
+      if (st.state === 'done') { location.reload(); return; }
+    } catch { /* the page is restarting */ }
+  }
+  notice('The update is taking longer than expected. Reload this page in a minute; if it does not come back, run Start.cmd.');
+}
+$('app-update').addEventListener('click', updateApp);
+
 function renderUpdates() {
+  renderApp();
   const b = LAST_BUILD, l = LATEST, st = STEAM;
   if (!b || !b.installed) { $('update-facts').replaceChildren(); $('update-banner').replaceChildren(); return; }
   const when = l && l.checked ? new Date(l.checked).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '';

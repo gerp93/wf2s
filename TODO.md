@@ -9,6 +9,7 @@ What is not built or not verified yet. See [docs/distribution-plan.md](docs/dist
 - The server's own "reachable / unreachable" lines on a real online server: the Network tab's parser is tested against the exact
   message texts from the server program, but the live case has not been seen.
 - **Update server** end to end (stop, SteamCMD update window, start again).
+- **Update app** against a real release (the offline tests and a live swap in a throwaway install pass; the download from GitHub and the checksum from GitHub's API have not run yet). The first real test is going from the first release that contains the updater to the next one.
 - The first **release** (Auto Release runs on every push to `main`; Cut Release for a chosen number) and a download of its zip on another PC.
 
 ## Decisions still open

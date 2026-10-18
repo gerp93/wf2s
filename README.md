@@ -76,6 +76,8 @@ creates it from `defaults\instance`.
 | `scripts/setup.ps1 [-Instance name]` | First-run wizard (PC check, game download, name/password/admin, firewall, router help). Safe to re-run: finished steps are skipped and an existing server is only changed if you type new answers. |
 | `scripts/install.ps1 [-SteamUser name]` | Downloads SteamCMD if missing, installs or updates the server into `./server`. Remembers the Steam account name (not the password) in `steam-user.local`. |
 | `scripts/update.ps1` | Re-runs the install to pick up game patches. Stop the server first (the page's Update button does that). |
+| `scripts/check-update.ps1` | Asks Steam (anonymous, read-only) for the newest server and game builds and GitHub for the newest release of this app; writes `latest-build.local`. The page runs it in the background. |
+| `scripts/self-update.ps1` | Replaces this app's own files with a newer release zip, keeping your server, the game and every `*.local` file. The page's **Update app** button runs it. |
 | `scripts/set-password.ps1 [-Instance name]` | Prompts for the password and writes `password.local`. |
 | `scripts/start.ps1 [-Instance name] [-Local]` | Creates the instance from `defaults\instance` if it does not exist, generates the config files, then launches the server with `--save-dir instances\<name>`. `-Local` starts the game's local-only mode (`--local-server`) instead of the online one; it is for testing. |
 | `scripts/firewall.ps1 [-Ports 30100,...]` | Adds inbound UDP allow rules (skips ports that already have one). Run elevated; `setup.ps1` does that for you. |
@@ -292,8 +294,14 @@ a matching forward and firewall rule. Forward only the game port, and avoid DMZ 
 `.\scripts\update.ps1` (it uses the Steam account name saved by the first install; pass `-SteamUser NAME` to change it) and start it
 again. Keep the server and client on the same version, especially during Early Access.
 
-**This app:** download the new zip and extract it over (or beside) the old folder. Your server lives in `instances\`, which the zip
-does not contain, so it is never overwritten. If you installed with git, `git pull`.
+**This app:** it updates itself. The settings page checks GitHub for a newer release (when it opens, then hourly) and shows a banner
+and an **Update app** button on the Network & version tab. One click downloads the release, checks it (GitHub's SHA-256 checksum, the
+expected files, no path that escapes the folder), replaces the app's own files (`scripts`, `ui`, `defaults`, `docs`, the top-level
+files) and restarts the page on the same port; it takes a few seconds. Your server keeps running and nothing of yours is touched:
+`instances\` (your server), `server\` (the game), `steamcmd\` and every `*.local` file are never replaced or deleted. The old app
+files are kept in `.update-backup\`, and are put back automatically if the swap fails. The first release that can do this is the first
+one to contain `scripts\self-update.ps1`; an older zip has to be replaced by hand once. A copy run from git has no release version
+and is updated with `git pull` instead.
 
 ## Troubleshooting
 - **`ERROR! Failed to install app '3519390' (Missing configuration)`:** anonymous login is not allowed. Pass `-SteamUser`.

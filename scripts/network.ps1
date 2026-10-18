@@ -225,6 +225,7 @@ function Get-WfLatestBuild([string]$Root, [string]$ServerDir) {
         installed       = $installed
         updateAvailable = $newer
         clientUpdateAvailable = $clientNewer
+        app             = (Get-WfAppInfo $Root)
     }
 }
 

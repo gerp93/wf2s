@@ -19,6 +19,9 @@ try {
     Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
     $zip = [IO.Compression.ZipFile]::Open($zipPath, 'Create')
     try {
+        # The build-time version stamp the app reads to know what it is (and whether a newer release exists).
+        $entry = $zip.CreateEntry('wf2s/VERSION')
+        $w = New-Object IO.StreamWriter($entry.Open(), (New-Object Text.UTF8Encoding $false)); try { $w.Write($Version) } finally { $w.Dispose() }
         foreach ($f in $files) {
             if (-not (Test-Path -LiteralPath (Join-Path $Root $f))) { continue }   # tracked but deleted in the working tree
             $null = [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, (Join-Path $Root $f), "wf2s/$f", 'Optimal')
@@ -31,7 +34,7 @@ try {
     try {
         $names = @($zip.Entries | ForEach-Object { $_.FullName })
         $bad = @($names | Where-Object { $_ -match '^wf2s/(server|steamcmd|instances|dist|\.personal-backup)/' -or $_ -match '\.local$' -or $_ -match '(^|/)(password|admins)\.' -or $_ -match '\.(exe|dll|rpck)$' })
-        foreach ($need in 'wf2s/Start.cmd', 'wf2s/LICENSE', 'wf2s/README.md', 'wf2s/scripts/setup.ps1', 'wf2s/ui/index.html', 'wf2s/defaults/instance/server_config.template.scnf') {
+        foreach ($need in 'wf2s/Start.cmd', 'wf2s/LICENSE', 'wf2s/README.md', 'wf2s/VERSION', 'wf2s/scripts/setup.ps1', 'wf2s/scripts/self-update.ps1', 'wf2s/ui/index.html', 'wf2s/defaults/instance/server_config.template.scnf') {
             if ($names -notcontains $need) { throw "The zip is missing $need." }
         }
         Write-Host "$($names.Count) files in $zipPath"

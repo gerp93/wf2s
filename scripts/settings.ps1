@@ -199,6 +199,7 @@ function Set-WfPassword([string]$InstanceDir, $Password, [string]$By = 'settings
 . "$PSScriptRoot\server.ps1"  # start and stop a server instance
 . "$PSScriptRoot\instance.ps1" # create an instance from defaults\instance, Steam name, admins
 . "$PSScriptRoot\network.ps1"  # port forwarding help and the installed game build
+. "$PSScriptRoot\appupdate.ps1" # this app's own version and self-update
 
 # Generates default_loop.becl from its template plus the overrides. No-op when there is no template.
 function Build-WfLoop([string]$InstanceDir) {
