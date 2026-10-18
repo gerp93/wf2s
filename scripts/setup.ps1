@@ -164,11 +164,11 @@ Step '6 of 6: your router (this one step cannot be automated)'
 $net = Get-WfLocalNetwork
 Write-Host 'For friends outside your home to join, your router must send the game''s traffic to this PC:'
 Write-Host ''
-Write-Host "  1. Give this PC a fixed address in the router (called a DHCP reservation or static lease)."
+Write-Host "  1. Set a static IP address for this PC in the router (called a DHCP reservation or static lease)."
 Write-Host "       This PC's address now: $(if ($net.ip) { $net.ip } else { '(could not be read)' })$(if ($net.adapter) { '  on ' + $net.adapter })"
 Write-Host "  2. Forward  UDP  port  $port  (external and internal) to that address (port forwarding / virtual server)."
 Write-Host ''
-if ($net.gateway) { Write-Host "  Your router is probably at   http://$($net.gateway)   (the sign-in is often on a sticker on the router)." }
+if ($net.gateway) { Write-Host "  Your router's web page is probably   http://$($net.gateway)   (some routers, such as Deco or eero, have only a phone app instead)." }
 Write-Host '  Every router looks different: search for your router model plus "port forwarding".'
 Write-Host '  Once the server runs, the settings page''s Network tab tells you whether the forward worked.'
 Write-Host '  Playing on your own home network needs none of this.'

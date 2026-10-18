@@ -56,7 +56,7 @@ jobs:
           2. Double-click `Start.cmd`. Windows may say "Windows protected your PC" because the file came from the internet:
              click **More info**, then **Run anyway** (the scripts are plain text you can read).
           3. Answer the questions (Steam account name, server name, server password). Windows asks once to open the firewall port.
-          4. Set up your router: a fixed address for the PC and a forward of **UDP 30100** to it.
+          4. Set up your router: a static IP for the PC and a forward of **UDP 30100** to it.
 
           Needs a Windows 10/11 PC and a Steam account that owns Wreckfest 2. The game server downloads from Steam on your PC; it is not part of this zip.
           Updating from an older version: extract over the old folder. Your server lives in `instances\`, which is not in the zip.

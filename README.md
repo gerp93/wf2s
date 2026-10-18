@@ -33,11 +33,11 @@ a running server keeps running in its own window.
 Friends on the internet reach you through your router, which needs two settings (the page's **Network & version** tab shows the
 exact numbers for your PC):
 
-1. **A fixed address for this PC.** Look for *DHCP reservation* or *static lease* in the router and reserve this PC's address.
+1. **A static IP address for this PC.** Look for *DHCP reservation* or *static lease* in the router and reserve this PC's address.
    Otherwise the router may give the PC a new address one day and the forward below stops working.
 2. **Port forwarding** of **UDP 30100** (external and internal) to that address. Some routers call it *virtual server*.
 
-Every router has different menus: search for your router's model name plus "port forwarding". Forward only that one port, and avoid
+Every router has different menus, and some (such as Deco or eero mesh systems) can only be changed from their phone app instead of a web page: search for your router's model name plus "port forwarding". Forward only that one port, and avoid
 DMZ. If your router's internet address starts with `10.`, `192.168.`, `172.16`-`172.31` or `100.64`-`100.127`, your provider shares one
 address between customers (CGNAT) and no port forward can work; you would need a public address from the provider, or to host elsewhere.
 
@@ -243,9 +243,9 @@ Things to know:
   installed game with `.\scripts\game-data-report.ps1`.
 
 ### Network & version tab
-- **Letting friends join:** this PC's local address, the router's address, the port and protocol to forward (UDP 30100, read from the
+- **Make your server reachable from the internet:** this PC's local address, the router's address, the port and protocol to forward (UDP 30100, read from the
   instance's `game port`), whether the address is fixed (DHCP) and whether the Windows Firewall rule exists. It explains in plain
-  words what a fixed address and a port forward are.
+  words what a static IP and a port forward are, as two numbered steps with the values to type into the router.
 - **Is it working?** The server tests itself shortly after it starts and prints `Server is reachable from public network.` or
   `Server is unreachable.`, plus `Router port forwarded using UPnP. External endpoint at <ip>` or `... UPnP unavailable ...`. The
   page reads those lines from the running server's console (the same way Apply now does) and turns them into advice, including a
@@ -263,7 +263,7 @@ To open it from Hardpoint, add a mount that runs `powershell scripts\ui.ps1` fro
 `http://127.0.0.1:30180`. Restart it after updating these scripts.
 
 ## Networking
-1. Reserve a fixed local IP for the host PC in your router.
+1. Set a static IP for the host PC in your router (DHCP reservation).
 2. Forward **UDP 30100** (external and internal) to that IP.
 3. Run `firewall.ps1` on the host.
 4. Friends join from the in-game server browser and enter the password.

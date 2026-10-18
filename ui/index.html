@@ -176,21 +176,19 @@
 
   <div id="tab-network" hidden>
     <section class="card">
-      <h2>Let friends join your game: 2 steps on your router</h2>
-      <p style="margin-bottom:8px">This lets friends outside your home find your server <b>in Wreckfest 2</b> (the in-game server list). Players on your own home network need none of it.</p>
-      <p style="margin-bottom:8px">Both steps are done on <b>your router&rsquo;s own settings page</b>, not here and not in Windows. Do them in this order, because step 2 uses the address from step 1.</p>
+      <h2>Make your server reachable from the internet</h2>
+      <p style="margin-bottom:8px">Two settings in your <b>router&rsquo;s own settings</b> (not here, not in Windows): on its web page, or in its phone app if that is all it has (many mesh routers, such as Deco or eero, are app-only). Do them in order. Players on your home network don&rsquo;t need them.</p>
       <div class="toolbar" style="margin-bottom:0">
-        <span>Open your router&rsquo;s page:</span>
+        <span>Router web page:</span>
         <span id="net-router"></span>
-        <span class="muted">(Its sign-in is often printed on a sticker on the router. Your internet provider&rsquo;s help pages can tell you if not.)</span>
+        <span class="muted">(read from this PC&rsquo;s network. If nothing opens, use the router&rsquo;s app.)</span>
       </div>
 
       <div class="step">
         <div class="stepno">1</div>
         <div>
-          <h3>Give this PC a fixed address</h3>
-          <p>Routers hand out addresses automatically and may give this PC a different one later, which would break step 2. Ask the router to <b>always give this PC the same address</b>.</p>
-          <p class="muted">In the router, look for: <b>DHCP reservation</b>, <b>static lease</b>, <b>address reservation</b> or <b>reserved IP</b>. Pick this PC from the list of connected devices, then reserve the address below for it.</p>
+          <h3>Set a static IP address for this PC</h3>
+          <p class="muted">So the router always gives this PC the same address. Look for <b>DHCP reservation</b>, <b>address reservation</b> or <b>static lease</b>, pick this PC from the device list, and reserve:</p>
           <div id="net-step1" class="vals"><div class="fact"><span class="muted">reading&hellip;</span></div></div>
           <p id="net-step1-state" class="muted"></p>
         </div>
@@ -199,19 +197,17 @@
       <div class="step">
         <div class="stepno">2</div>
         <div>
-          <h3>Forward the game port to this PC</h3>
-          <p>This tells the router: &ldquo;game traffic that arrives on this port belongs to this PC.&rdquo; Without it, the router drops friends&rsquo; connections.</p>
-          <p class="muted">In the router, look for: <b>Port forwarding</b>, <b>Virtual server</b>, <b>Port mapping</b> or <b>NAT</b> (sometimes under &ldquo;Advanced&rdquo; or &ldquo;Gaming&rdquo;). Add one new rule with these values:</p>
+          <h3>Forward the game port to that IP</h3>
+          <p class="muted">Add a rule under <b>Port forwarding</b> (also called <b>virtual server</b>, <b>port mapping</b> or <b>NAT</b>) with:</p>
           <div id="net-step2" class="vals"><div class="fact"><span class="muted">reading&hellip;</span></div></div>
-          <p class="muted">If the router asks for a range, use the same number twice (<span id="net-range"></span>). The rule&rsquo;s name can be anything, such as &ldquo;Wreckfest 2&rdquo;. Do not use &ldquo;DMZ&rdquo;; it exposes the whole PC.</p>
+          <p class="muted">The rule&rsquo;s name can be anything. If it asks for a port range, enter <span id="net-range"></span>.</p>
         </div>
       </div>
 
-      <p class="muted" style="margin:12px 0 0">Every router looks different, and these pages can&rsquo;t show yours. If you can&rsquo;t find a setting, search the web for your router&rsquo;s model name plus <b>&ldquo;port forwarding&rdquo;</b>. When both steps are saved, start the server and check <b>Is it working?</b> below.</p>
+      <p class="muted" style="margin:12px 0 0">Every router is different: if you can&rsquo;t find these, search the web for your router&rsquo;s model plus <b>&ldquo;port forwarding&rdquo;</b>. Then start the server and check <b>Is it working?</b> below.</p>
     </section>
     <section class="card">
       <h2>On this PC</h2>
-      <p class="muted" style="margin-bottom:8px">Nothing to do here unless a line says otherwise.</p>
       <div id="net-facts"></div>
       <div class="toolbar" style="margin-top:12px; margin-bottom:0">
         <button type="button" class="small" id="net-refresh">Refresh</button>
@@ -894,23 +890,23 @@ async function loadNetwork() {
     const [n, st] = await Promise.all([api('/api/network'), api('/api/state')]);
     showBuild(st.build);
     const L = n.local || {}, r = n.reachability || {};
+    if (L.hostname === undefined) notice(STALE);   // an older settings process answered: it does not send the PC name / MAC
     const advertised = r.running && r.address ? [factRow('Address the server advertises', el('span', {}, el('b', { text: r.address }),
       el('span', { class: 'muted', text: r.privateEndpoint ? '  (a private address: players outside cannot reach it)' : '  (your public internet address; friends connect to this)' })))] : [];
     // Router steps: the exact values to type into the router's page.
     $('net-router').replaceChildren(L.gateway
       ? el('a', { href: 'http://' + L.gateway, target: '_blank', rel: 'noopener', text: 'http://' + L.gateway, style: 'color: var(--color-accent-blue); font-weight:700' })
-      : el('span', { class: 'muted', text: 'address could not be read (it is usually printed on the router)' }));
+      : el('span', { class: 'muted', text: 'could not be read' }));
     $('net-step1').replaceChildren(
       valRow('This PC’s name', L.hostname),
-      valRow('Its network (MAC) address', L.mac, 'The router may list devices by name or by this number, with : or - between the pairs.'),
-      valRow('Reserve this address', L.ip, '', true));
-    $('net-step1-state').textContent = L.dhcp === true ? 'Right now the router chooses this PC’s address, so it could change. That is what step 1 prevents.'
-      : L.dhcp === false ? 'This PC’s address is set by hand in Windows, so it will not change by itself. Step 1 is then optional, but reserving it in the router is still the safest.' : '';
+      valRow('Its MAC address', L.mac, 'Some routers list devices by this.'),
+      valRow('Reserve this IP address', L.ip, '', true));
+    $('net-step1-state').textContent = L.dhcp === false ? 'This PC already has a static IP set in Windows; reserving it in the router as well is still the safest.' : '';
     $('net-step2').replaceChildren(
-      valRow('Protocol', n.protocol, 'UDP only. If the router offers TCP, UDP or Both, choose UDP (Both also works).'),
+      valRow('Protocol', n.protocol, 'UDP only (not TCP)'),
       valRow('External / public port', String(n.port), '', true),
       valRow('Internal / private port', String(n.port), '', true),
-      valRow('Send to this IP address', L.ip, 'The address from step 1.', true));
+      valRow('Send to IP address', L.ip, '', true));
     $('net-range').textContent = n.port + ' to ' + n.port;
     $('net-facts').replaceChildren(
       factRow('Windows Firewall', n.firewallRule === true ? okText('UDP ' + n.port + ' is open on this PC.', true)
