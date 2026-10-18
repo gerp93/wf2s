@@ -28,6 +28,10 @@ MinVersion=10.0
 UninstallDisplayName=Wreckfest 2 Server (wf2s)
 CloseApplications=no
 
+[Messages]
+FinishedLabel=Wreckfest 2 Server is installed.%n%nLeave "Set up my server now" ticked to open the setup window. If you do not see it, look for it in the taskbar, or open "Wreckfest 2 Server" from the Start Menu.
+FinishedLabelNoIcons=Wreckfest 2 Server is installed.%n%nLeave "Set up my server now" ticked to open the setup window. If you do not see it, look for it in the taskbar.
+
 [Tasks]
 Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Shortcuts:"
 
@@ -39,7 +43,9 @@ Name: "{autoprograms}\Wreckfest 2 Server"; Filename: "{app}\Start.cmd"; WorkingD
 Name: "{autodesktop}\Wreckfest 2 Server"; Filename: "{app}\Start.cmd"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\Start.cmd"; WorkingDir: "{app}"; Description: "Set up my server now"; Flags: postinstall nowait skipifsilent shellexec
+; Started through conhost.exe on purpose: launched the normal way, Windows 11 hands the console to Windows Terminal, which can open it
+; behind other windows (the installer has already closed, so nothing brings it forward) and the user sees nothing happen.
+Filename: "conhost.exe"; Parameters: "cmd.exe /c ""{app}\Start.cmd"""; WorkingDir: "{app}"; Description: "Set up my server now"; Flags: postinstall nowait skipifsilent
 
 ; The in-app updater adds and removes files the installer does not know about, so the app's own folders are removed as a whole.
 ; Your server (instances), the game (server) and SteamCMD are handled by the question below.
