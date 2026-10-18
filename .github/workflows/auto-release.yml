@@ -1,0 +1,41 @@
+# Fires a release on EVERY push to main, with no manual step (KVG_Standards templates/auto-release.yml). Coexists with
+# cut-release.yml, which stays available for a deliberately numbered release.
+#
+# The version bump (mathieudutour/github-tag-action) reads Conventional Commits prefixes across the pushed commits to decide
+# patch/minor/major (default: patch), then creates and pushes the tag. The release job below calls the build workflow directly
+# in the same run, so it does not depend on the tag push firing another workflow (GITHUB_TOKEN pushes don't).
+name: Auto Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      new_tag: ${{ steps.tag_version.outputs.new_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Bump semantic version and create tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: patch
+          release_branches: main
+
+  release:
+    needs: version
+    if: ${{ needs.version.outputs.new_tag != '' }}
+    uses: ./.github/workflows/release-zip.yml
+    with:
+      version: ${{ needs.version.outputs.new_tag }}
+    permissions:
+      contents: write
