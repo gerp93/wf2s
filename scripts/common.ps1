@@ -3,6 +3,7 @@ $Root     = Split-Path $PSScriptRoot -Parent
 $SteamCmd = Join-Path $Root 'steamcmd'
 $Server   = Join-Path $Root 'server'
 $AppId    = 3519390   # Wreckfest 2 Dedicated Server
+$ClientAppId = 1203190   # Wreckfest 2 (the game itself, what players run)
 
 # Password change history: instances\<name>\password-history.local (gitignored). It records when and how the password was
 # changed, never the password itself.

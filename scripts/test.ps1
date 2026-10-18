@@ -77,6 +77,46 @@ try {
     Check 'console: nothing printed yet' { (ConvertFrom-WfConsoleReachability @('> ', 'Server Started')).status -eq 'unknown' }
     Check 'game version from window title'  { (ConvertFrom-WfWindowTitle 'Wreckfest 2 | 0.377396') -eq '0.377396' -and (ConvertFrom-WfWindowTitle 'Command Prompt') -eq '' }
     Check 'known build names a game version' { (Get-WfKnownBuild $Root).gameVersion -match '^\d+\.\d+$' }
+    $info = @'
+AppID : 3519390, change number : 1/1, last change : Fri Oct 16 19:19:37 2026
+"3519390"
+{
+	"depots"
+	{
+		"branches"
+		{
+			"public"
+			{
+				"buildid"		"111"
+			}
+		}
+	}
+}
+AppID : 1203190, change number : 2/2, last change : Fri Oct 16 19:19:37 2026
+"1203190"
+{
+	"depots"
+	{
+		"public"
+		{
+			"x"		"y"
+		}
+		"branches"
+		{
+			"public"
+			{
+				"buildid"		"222"
+				"timeupdated"		"1792069253"
+			}
+		}
+	}
+}
+'@
+    Check 'Steam app info: server build'   { (ConvertFrom-WfAppInfo $info 3519390).latest -eq '111' }
+    Check 'Steam app info: game build + time' { $c = ConvertFrom-WfAppInfo $info 1203190; $c.latest -eq '222' -and $c.timeupdated -like '2026-10-*' }
+    Check 'Steam app info: unknown app or junk' { ($null -eq (ConvertFrom-WfAppInfo $info 999)) -and ($null -eq (ConvertFrom-WfAppInfo 'Login Failure' 3519390)) }
+    Check 'Steam client lookup answers' { $s = Get-WfSteamClient; ($s.installed -is [bool]) -and ($s.gameInstalled -is [bool]) }
+    Check 'latest-build state is well formed' { $l = Get-WfLatestBuild $Root $Server; ($l.updateAvailable -is [bool]) -and ($l.clientUpdateAvailable -is [bool]) -and ($l.checking -is [bool]) }
     Check 'game port read'              { (Get-WfGamePort $dir) -eq 30100 }
     Check 'known build file readable'   { (Get-WfKnownBuild $Root).buildid -match '^\d+$' }
 
@@ -89,6 +129,9 @@ try {
         Check 'page answers' { $state.instance -eq $name }
         Check 'state has build info' { $null -ne $state.build }
         Check 'password is not in the state' { -not ((ConvertTo-Json $state -Depth 6) -match 'ci-test-password') }
+        Check 'state has Steam client info' { $null -ne $state.steam }
+        Check 'latest-build answers' { $l = Invoke-RestMethod "http://127.0.0.1:$port/api/latest-build"; $null -ne $l.updateAvailable }
+        Check 'starting a check without the header is refused' { try { $null = Invoke-WebRequest "http://127.0.0.1:$port/api/latest-build/check" -Method POST -Body '{}' -UseBasicParsing; $false } catch { $_.Exception.Response.StatusCode.value__ -eq 403 } }
         Check 'network info answers' { $n = Invoke-RestMethod "http://127.0.0.1:$port/api/network"; $n.port -eq 30100 -and $n.protocol -eq 'UDP' }
         Check 'page html has the Network tab' { (Invoke-WebRequest "http://127.0.0.1:$port/" -UseBasicParsing).Content -match 'tab-network' }
         Check 'a wrong Host header is refused' { try { $null = Invoke-WebRequest "http://127.0.0.1:$port/api/state" -Headers @{ Host = 'evil.example' } -UseBasicParsing; $false } catch { $_.Exception.Response.StatusCode.value__ -eq 403 } }

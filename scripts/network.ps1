@@ -150,6 +150,93 @@ function Get-WfBuildInfo([string]$Root, [string]$ServerDir, [string]$InstanceDir
     }
 }
 
+# ---- Is there a newer build? (server and game) -------------------------------------------------------------------------------
+# scripts\check-update.ps1 asks Steam (anonymous, read-only, via SteamCMD) for the newest public build of the dedicated server and of
+# the game itself, and writes latest-build.local. The page starts it in the background and reads the file, so a slow Steam never
+# freezes the page.
+
+# One app's public-branch build id and release time from SteamCMD's `app_info_print` text, or $null.
+function ConvertFrom-WfAppInfo([string]$Text, [long]$AppIdWanted = 3519390) {
+    $m = [regex]::Match($Text, '(?ms)^AppID : ' + $AppIdWanted + ',.*?(?=^AppID : |\z)')
+    if (-not $m.Success) { return $null }
+    $i = $m.Value.IndexOf('"branches"')
+    if ($i -lt 0) { return $null }
+    if ($m.Value.Substring($i) -match '"public"\s*\{\s*"buildid"\s+"(\d+)"(?:[^}]*?"timeupdated"\s+"(\d+)")?') {
+        $when = ''
+        if ($Matches[2]) { $when = ([DateTimeOffset]::FromUnixTimeSeconds([long]$Matches[2])).UtcDateTime.ToString('o') }
+        return [pscustomobject]@{ latest = $Matches[1]; timeupdated = $when }
+    }
+    $null
+}
+
+function Get-WfLatestBuildFile([string]$Root) { Join-Path $Root 'latest-build.local' }
+function Read-WfLatestBuildFile([string]$Root) {
+    $f = Get-WfLatestBuildFile $Root
+    if (Test-Path $f) { try { return Read-WfJson $f } catch { } }
+    [pscustomobject]@{ latest = ''; timeupdated = ''; clientLatest = ''; clientTimeupdated = ''; checked = ''; error = '' }
+}
+
+# ---- The Steam program and the game on this PC -----------------------------------------------------------------------------
+# Not needed to HOST (the server is downloaded with SteamCMD, which stands alone), but needed to PLAY. Looks in the registry, then the
+# usual folders, then every Steam library listed in libraryfolders.vdf for the game's manifest.
+function Get-WfSteamClient {
+    $r = [ordered]@{ installed = $false; path = ''; running = $false; gameInstalled = $false; gameBuild = '' }
+    $cands = @()
+    try { $cands += [string](Get-ItemProperty 'HKCU:\Software\Valve\Steam' -ErrorAction Stop).SteamPath } catch { }
+    $cands += "${env:ProgramFiles(x86)}\Steam", "$env:ProgramFiles\Steam"
+    foreach ($c in ($cands | Where-Object { $_ })) {
+        $dir = $c -replace '/', '\'
+        if (Test-Path (Join-Path $dir 'steam.exe')) { $r.installed = $true; $r.path = $dir; break }
+    }
+    if (-not $r.installed) { return $r }
+    $r.running = [bool](Get-Process steam -ErrorAction SilentlyContinue)
+    $libs = @($r.path)
+    $vdf = Join-Path $r.path 'steamapps\libraryfolders.vdf'
+    if (Test-Path $vdf) { foreach ($m in [regex]::Matches([IO.File]::ReadAllText($vdf), '"path"\s+"([^"]+)"')) { $libs += ($m.Groups[1].Value -replace '\\\\', '\') } }
+    foreach ($l in ($libs | Select-Object -Unique)) {
+        $mf = Join-Path $l 'steamapps\appmanifest_1203190.acf'
+        if (Test-Path $mf) {
+            $r.gameInstalled = $true
+            if ([IO.File]::ReadAllText($mf) -match '"buildid"\s+"(\d+)"') { $r.gameBuild = $Matches[1] }
+            break
+        }
+    }
+    $r
+}
+
+$script:WfCheckProc = $null
+function Test-WfLatestBuildChecking { [bool]($script:WfCheckProc -and -not $script:WfCheckProc.HasExited) }
+
+# What the page shows: the last answer from Steam, whether a check is running now, and whether either is newer than what is installed.
+function Get-WfLatestBuild([string]$Root, [string]$ServerDir) {
+    $f = Read-WfLatestBuildFile $Root
+    $installed = Get-WfInstalledBuild $ServerDir
+    $steam = Get-WfSteamClient
+    $newer = $false; $clientNewer = $false
+    if ($f.latest -match '^\d+$' -and $installed -match '^\d+$') { $newer = [long]$f.latest -gt [long]$installed }
+    if ($f.clientLatest -match '^\d+$' -and $steam.gameBuild -match '^\d+$') { $clientNewer = [long]$f.clientLatest -gt [long]$steam.gameBuild }
+    [ordered]@{
+        latest          = [string]$f.latest
+        released        = [string]$f.timeupdated
+        clientLatest    = [string]$f.clientLatest
+        checked         = [string]$f.checked
+        error           = [string]$f.error
+        checking        = (Test-WfLatestBuildChecking)
+        installed       = $installed
+        updateAvailable = $newer
+        clientUpdateAvailable = $clientNewer
+    }
+}
+
+function Start-WfLatestBuildCheck([string]$Root, [string]$ServerDir) {
+    if (-not (Test-WfLatestBuildChecking)) {
+        $script = Join-Path $Root 'scripts\check-update.ps1'
+        $script:WfCheckProc = Start-Process powershell.exe -WindowStyle Hidden -PassThru -WorkingDirectory $Root `
+            -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"' + $script + '"'))
+    }
+    Get-WfLatestBuild $Root $ServerDir
+}
+
 # Opens the update in its own visible window (SteamCMD may ask for a Steam Guard code) and returns at once; the page watches the build id.
 function Start-WfUpdate([string]$Root) {
     $user = Get-WfSteamUser $Root

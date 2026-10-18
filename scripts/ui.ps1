@@ -80,6 +80,7 @@ function Handle($ctx) {
             passwordHistory = @(Read-WfPasswordHistory $save)
             running   = [bool](Find-WfServerProcess $save)   # this instance's own server, not just any Wreckfest2.exe
             build     = (Get-WfBuildInfo $Root $Server $save)
+            steam     = (Get-WfSteamClient)
         })
     }
     if ($req.HttpMethod -eq 'PUT' -and $path -eq '/api/overrides') {
@@ -92,6 +93,11 @@ function Handle($ctx) {
     if ($req.HttpMethod -eq 'GET' -and $path -eq '/api/network') {
         # Slow-ish (it reads the server console), so the page asks only when the Network tab is open or Refresh is clicked.
         try { return SendJson $ctx 200 (Get-WfNetworkInfo $save) }
+        catch { return SendJson $ctx 500 @{ error = $_.Exception.Message } }
+    }
+    if ($req.HttpMethod -eq 'GET' -and $path -eq '/api/latest-build') {
+        # The last answer from Steam about the newest server/game builds (read from a file; the check itself runs in the background).
+        try { return SendJson $ctx 200 (Get-WfLatestBuild $Root $Server) }
         catch { return SendJson $ctx 500 @{ error = $_.Exception.Message } }
     }
     if ($req.HttpMethod -eq 'GET' -and $path -eq '/api/choices') { return SendJson $ctx 200 (Get-WfChoices $save $Server) }
@@ -136,6 +142,11 @@ function Handle($ctx) {
     if ($req.HttpMethod -eq 'POST' -and $path -eq '/api/server/stop') {
         # Graceful: types `shutdown` into the server console. With {"force": true} it ends this instance's process instead.
         try { $b = Read-Body $req; return SendJson $ctx 200 (Stop-WfServer $save -Force:([bool]$b.force)) }
+        catch { return SendJson $ctx 500 @{ error = $_.Exception.Message } }
+    }
+    if ($req.HttpMethod -eq 'POST' -and $path -eq '/api/latest-build/check') {
+        # Starts scripts\check-update.ps1 in the background (anonymous, read-only question to Steam) and returns at once.
+        try { return SendJson $ctx 200 (Start-WfLatestBuildCheck $Root $Server) }
         catch { return SendJson $ctx 500 @{ error = $_.Exception.Message } }
     }
     if ($req.HttpMethod -eq 'PUT' -and $path -eq '/api/steam-user') {

@@ -127,6 +127,7 @@
 <main>
   <div id="notice" class="notice"></div>
   <div id="build-banner" class="info"></div>
+  <div id="update-banner" class="info" style="border-style:solid; border-color:var(--color-accent-green); color:var(--color-accent-green)"></div>
 
   <div id="tab-rotation" hidden>
     <p class="muted" style="margin-bottom:12px">The default event rotation, one row per event. Changes are saved to the rotation template. Use “Apply now” (top right) to push them to a running server, otherwise they apply the next time it starts.</p>
@@ -222,6 +223,7 @@
     <section class="card">
       <h2>Game version</h2>
       <div id="build-facts"></div>
+      <div id="update-facts"></div>
       <div class="toolbar" style="margin-top:12px; margin-bottom:0">
         <button type="button" class="small" id="build-update">Update server</button>
         <span class="muted">Stops the server, then downloads the latest version of the server from Steam.</span>
@@ -858,6 +860,8 @@ const okText = (t, good) => el('span', { text: t, style: 'color: var(--color-acc
 
 const STALE = 'This page is being served by an older copy of the settings program (it does not know about the Network & version tab). Close it and start it again (Start.cmd, or scripts\\ui.ps1); a running game server is not affected.';
 function showBuild(b) {
+  LAST_BUILD = b || null;
+  if (typeof renderUpdates === 'function') renderUpdates();
   const banner = $('build-banner');
   if (!b) {   // an older ui.ps1 is still running and sent no build info: say so rather than claiming the game is missing
     banner.textContent = STALE;
@@ -899,6 +903,7 @@ async function loadNetwork() {
   $('net-refresh').disabled = true; $('net-when').textContent = 'reading…';
   try {
     const [n, st] = await Promise.all([api('/api/network'), api('/api/state')]);
+    STEAM = st.steam || null;
     showBuild(st.build);
     const L = n.local || {}, r = n.reachability || {};
     if (L.hostname === undefined) notice(STALE);   // an older settings process answered: it does not send the PC name / MAC
@@ -976,6 +981,65 @@ $('build-update').addEventListener('click', async () => {
   finally { $('build-update').disabled = false; }
 });
 
+// ---- is there a newer build? ----
+// Asks Steam (through the settings program, in the background) for the newest public server and game builds: once when the page
+// opens, again every 6 hours, and on "Check now". Suggests updating only when a newer build exists.
+let LATEST = null, STEAM = null, LAST_BUILD = null, LATEST_BUSY = false;
+const STEAM_DOWNLOAD = 'https://store.steampowered.com/about/';
+function goToUpdate() { show('network'); setTimeout(() => $('build-update').scrollIntoView({ block: 'center' }), 50); }
+function renderUpdates() {
+  const b = LAST_BUILD, l = LATEST, st = STEAM;
+  if (!b || !b.installed) { $('update-facts').replaceChildren(); $('update-banner').replaceChildren(); return; }
+  const when = l && l.checked ? new Date(l.checked).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '';
+  const checkBtn = el('button', { type: 'button', class: 'small', text: l && l.checking ? 'Checking…' : 'Check now', disabled: !!(l && l.checking),
+    onclick: () => loadLatest(true) });
+  let latestVal;
+  if (!l) latestVal = el('span', { class: 'muted', text: 'checking…' });
+  else if (l.checking && !l.latest) latestVal = el('span', { class: 'muted', text: 'asking Steam…' });
+  else if (!l.latest) latestVal = el('span', { class: 'muted', text: l.error || 'not checked yet' });
+  else latestVal = el('span', {}, el('b', { text: l.latest }), '  ', l.updateAvailable ? okText('a newer server build is available', false) : okText('you are up to date', true),
+    el('span', { class: 'muted', text: when ? '  (checked ' + when + (l.error ? '; last check failed: ' + l.error : '') + ')' : '' }));
+  const rows = [factRow('Latest server build', el('span', { style: 'display:flex; gap:12px; align-items:center; flex-wrap:wrap' }, latestVal, checkBtn))];
+  if (st) {
+    rows.push(factRow('Steam on this PC', st.installed
+      ? okText('installed', true)
+      : el('span', {}, okText('not installed', false), '  ', el('a', { href: STEAM_DOWNLOAD, target: '_blank', rel: 'noopener', text: 'Install Steam', style: 'color: var(--color-accent-blue)' }),
+        el('span', { class: 'muted', text: '  You need it to play the game. Downloading the server does not use it.' }))));
+    if (st.installed) {
+      const gameVal = !st.gameInstalled
+        ? el('span', { class: 'muted', text: 'not installed in Steam (only needed to play on this PC; hosting does not need it)' })
+        : l && l.clientUpdateAvailable
+          ? el('span', {}, okText('an update is available', false), el('span', { class: 'muted', text: '  Steam normally installs it by itself; open Steam to check. ' }),
+              el('a', { href: 'steam://nav/downloads', text: 'Open Steam downloads', style: 'color: var(--color-accent-blue)' }))
+          : el('span', {}, okText(l && l.clientLatest ? 'up to date' : 'installed', true), el('span', { class: 'muted', text: '  (build ' + st.gameBuild + ')' }));
+      rows.push(factRow('Wreckfest 2 on this PC', gameVal));
+    }
+  }
+  $('update-facts').replaceChildren(...rows);
+  const lines = [];
+  if (l && l.updateAvailable) lines.push(el('div', {}, el('b', { text: 'A server update is available.' }), ' Players on the newest game version cannot join until the server is updated (yours: build ' + b.installed + ', newest: ' + l.latest + '). ',
+    el('button', { type: 'button', class: 'small', text: 'Update server…', onclick: goToUpdate })));
+  if (l && l.clientUpdateAvailable) lines.push(el('div', {}, el('b', { text: 'Wreckfest 2 on this PC has an update.' }), ' Open Steam to install it so you can still join your own server.'));
+  $('update-banner').replaceChildren(...lines);
+  $('build-update').classList.toggle('dirty', !!(l && l.updateAvailable));
+}
+async function loadLatest(force) {
+  if (LATEST_BUSY) return;
+  LATEST_BUSY = true;
+  try {
+    let l = await api('/api/latest-build');
+    const stale = !l.checked || Date.now() - Date.parse(l.checked) > 6 * 3600 * 1000;
+    if ((force || stale) && !l.checking) l = await send('POST', '/api/latest-build/check', {});
+    LATEST = l; renderUpdates();
+    for (let i = 0; i < 40 && LATEST.checking; i++) {   // the check runs in the background: wait for its answer
+      await new Promise(r => setTimeout(r, 3000));
+      LATEST = await api('/api/latest-build'); renderUpdates();
+    }
+  } catch { /* this page's settings program may be older, or Steam unreachable: keep what is shown */ }
+  LATEST_BUSY = false;
+}
+setInterval(() => loadLatest(false), 6 * 3600 * 1000);
+
 // ---- tabs / startup ----
 function show(tab) {
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
@@ -1006,7 +1070,9 @@ async function pollStatus() { try { setStatus((await api('/api/state')).running)
     fill('dl-levels', choices.levels); fill('dl-modes', choices.modes); fill('dl-weather', choices.weather); fill('dl-ai', choices.aiSets);
     fill('dl-damage', choices.damage); fill('dl-cars', choices.cars); fill('dl-start', choices.startOrders); fill('dl-collect', choices.collectingOrders);
     fill('dl-flags', ['reverse rule']);
+    STEAM = state.steam || null;
     showBuild(state.build);
+    loadLatest(false);
     buildGlobal(state); setStatus(state.running); showPasswordState(state.passwordSet); showPasswordHistory(state.passwordHistory);
     if (state.running) notice('The server is running. After you save, click “Apply now” to push changes to it live.');
     OVERRIDES = state.overrides || {};

@@ -253,6 +253,12 @@ Things to know:
   requests to outside services. Before the server prints a verdict it says "no result yet"; click Refresh.
   Tested here: the console-text parsing, with the server's exact messages (taken from the server program) as test input; the tab
   against a running local-only server (which never prints a verdict, so only the "no result" case was seen live).
+- **Update available?** The page asks Steam for the newest public builds of the dedicated server and of the game, once when it opens,
+  every 6 hours while it stays open, and on **Check now**. It runs `scripts/check-update.ps1` in the background: SteamCMD's read-only
+  app-info query, anonymous (no login, nothing downloaded; it does contact Steam), and keeps the answer in `latest-build.local`. A newer
+  server build puts a banner on every tab and highlights **Update server**; a newer game build says to open Steam. If Steam can't be reached
+  the last answer stays and the error is shown. The page also checks that **Steam is installed** (registry, usual folders, library
+  folders) and suggests installing it when it is not; it is only needed to play, not to host.
 - **Game version:** shows what this app was **tested up to** (game version and server build, from `defaults/known-build.json`),
   and what is installed: the Steam server build (`server\steamapps\appmanifest_3519390.acf`) and the game version players see
   (read from the running server's window title, then remembered in `game-version.local` for as long as the server build is the same). A banner warns when either
