@@ -95,6 +95,9 @@ function Handle($ctx) {
         try { return SendJson $ctx 200 (Get-WfNetworkInfo $save) }
         catch { return SendJson $ctx 500 @{ error = $_.Exception.Message } }
     }
+    if ($req.HttpMethod -eq 'GET' -and $path -eq '/api/app/update-status') {
+        return SendJson $ctx 200 (Read-WfAppUpdateStatus $Root)
+    }
     if ($req.HttpMethod -eq 'GET' -and $path -eq '/api/latest-build') {
         # The last answer from Steam about the newest server/game builds (read from a file; the check itself runs in the background).
         try { return SendJson $ctx 200 (Get-WfLatestBuild $Root $Server) }
@@ -142,6 +145,12 @@ function Handle($ctx) {
     if ($req.HttpMethod -eq 'POST' -and $path -eq '/api/server/stop') {
         # Graceful: types `shutdown` into the server console. With {"force": true} it ends this instance's process instead.
         try { $b = Read-Body $req; return SendJson $ctx 200 (Stop-WfServer $save -Force:([bool]$b.force)) }
+        catch { return SendJson $ctx 500 @{ error = $_.Exception.Message } }
+    }
+    if ($req.HttpMethod -eq 'POST' -and $path -eq '/api/app/update') {
+        # Replaces this app's files with the newest release (scripts\self-update.ps1) and restarts this page. Takes no input: the
+        # download address comes from the last check, never from the request.
+        try { return SendJson $ctx 200 (Start-WfAppUpdate $Root $Instance $Port) }
         catch { return SendJson $ctx 500 @{ error = $_.Exception.Message } }
     }
     if ($req.HttpMethod -eq 'POST' -and $path -eq '/api/latest-build/check') {

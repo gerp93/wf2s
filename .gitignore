@@ -15,3 +15,9 @@
 
 # Output of scripts/package.ps1
 /dist/
+
+# Written by scripts/self-update.ps1 (copy of the previous app files, kept until the next update)
+/.update-backup/
+
+# Stamped into the release zip by scripts/package.ps1; a git checkout has none
+/VERSION

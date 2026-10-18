@@ -120,6 +120,56 @@ AppID : 1203190, change number : 2/2, last change : Fri Oct 16 19:19:37 2026
     Check 'game port read'              { (Get-WfGamePort $dir) -eq 30100 }
     Check 'known build file readable'   { (Get-WfKnownBuild $Root).buildid -match '^\d+$' }
 
+    Write-Host 'App versions and self-update'
+    Check 'newer version detected'   { (Test-WfNewerVersion 'v0.0.1' 'v0.0.2') -and (Test-WfNewerVersion 'v0.0.9' 'v0.0.10') -and (Test-WfNewerVersion 'v1.9.9' 'v2.0.0') }
+    Check 'same, older and junk are not newer' { -not ((Test-WfNewerVersion 'v1.0.0' 'v1.0.0') -or (Test-WfNewerVersion 'v1.0.1' 'v1.0.0') -or (Test-WfNewerVersion 'dev' 'v1.0.0') -or (Test-WfNewerVersion '' 'v1.0.0') -or (Test-WfNewerVersion 'v1.0.0' 'latest')) }
+    $rel = ConvertFrom-Json '{"tag_name":"v1.2.3","draft":false,"prerelease":false,"published_at":"2026-10-18T00:00:00Z","assets":[{"name":"notes.txt","browser_download_url":"https://x/notes.txt"},{"name":"wf2s-v1.2.3.zip","browser_download_url":"https://github.com/gerp93/wf2s/releases/download/v1.2.3/wf2s-v1.2.3.zip","digest":"sha256:abc"}]}'
+    Check 'release parsed (tag, zip, digest)' { $i = ConvertFrom-WfRelease $rel; $i.tag -eq 'v1.2.3' -and $i.url -like '*wf2s-v1.2.3.zip' -and $i.digest -eq 'sha256:abc' }
+    Check 'draft, pre-release and zip-less releases ignored' {
+        $d = ConvertFrom-Json '{"tag_name":"v1.2.3","draft":true,"prerelease":false,"assets":[{"name":"wf2s-v1.2.3.zip","browser_download_url":"u"}]}'
+        $p = ConvertFrom-Json '{"tag_name":"v1.2.3","draft":false,"prerelease":true,"assets":[{"name":"wf2s-v1.2.3.zip","browser_download_url":"u"}]}'
+        $n = ConvertFrom-Json '{"tag_name":"v1.2.3","draft":false,"prerelease":false,"assets":[]}'
+        ($null -eq (ConvertFrom-WfRelease $d)) -and ($null -eq (ConvertFrom-WfRelease $p)) -and ($null -eq (ConvertFrom-WfRelease $n)) }
+    Check 'a git checkout refuses to self-update' { try { $null = Start-WfAppUpdate $Root 'x' 30180; $false } catch { $_.Exception.Message -match 'git' } }
+
+    $selfWork = Join-Path ([IO.Path]::GetTempPath()) "wf2s-selftest-$([guid]::NewGuid().ToString('N'))"
+    try {
+        $zipDir = Join-Path $selfWork 'zip'
+        $zip = & "$PSScriptRoot\package.ps1" -Version 'v9.9.9' -OutDir $zipDir | Select-Object -Last 1
+        $fake = Join-Path $selfWork 'app'
+        function PutFile([string]$rel, [string]$text) { $f = Join-Path $fake $rel; New-Item -ItemType Directory -Force (Split-Path $f -Parent) | Out-Null; [IO.File]::WriteAllText($f, $text) }
+        function GetFile([string]$rel) { $f = Join-Path $fake $rel; if (Test-Path $f) { [IO.File]::ReadAllText($f) } else { $null } }
+        PutFile 'VERSION' 'v0.0.1'; PutFile 'README.md' 'old readme'; PutFile 'scripts\setup.ps1' 'old setup'; PutFile 'scripts\old-only.ps1' 'stale'; PutFile 'ui\index.html' 'old page'
+        PutFile 'instances\main\password.local' 'secret'; PutFile 'instances\main\settings.json' 'mine'; PutFile 'server\Wreckfest2.exe' 'game'; PutFile 'steamcmd\steamcmd.exe' 'steam'
+        PutFile 'steam-user.local' 'someone'; PutFile 'latest-build.local' 'cache'
+
+        # a bad zip changes nothing
+        $bad = Join-Path $selfWork 'bad.zip'
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        $zf = [IO.Compression.ZipFile]::Open($bad, 'Create'); $e = $zf.CreateEntry('wf2s/README.md'); $sw = New-Object IO.StreamWriter($e.Open()); $sw.Write('x'); $sw.Dispose(); $zf.Dispose()
+        $null = & "$PSScriptRoot\self-update.ps1" -Root $fake -ZipPath $bad -NoRestart *>&1
+        Check 'an incomplete zip is refused and nothing changes' { ($LASTEXITCODE -eq 1) -and (GetFile 'VERSION') -eq 'v0.0.1' -and (GetFile 'scripts\setup.ps1') -eq 'old setup' }
+        $null = & "$PSScriptRoot\self-update.ps1" -Root $fake -ZipPath $zip -Digest ('sha256:' + ('0' * 64)) -NoRestart *>&1
+        Check 'a wrong checksum is refused and nothing changes' { ($LASTEXITCODE -eq 1) -and (GetFile 'VERSION') -eq 'v0.0.1' }
+        $null = & "$PSScriptRoot\self-update.ps1" -Root $fake -ZipPath $zip -Version 'v1.2.3' -NoRestart *>&1
+        Check 'a zip of a different version is refused' { ($LASTEXITCODE -eq 1) -and (GetFile 'VERSION') -eq 'v0.0.1' }
+        Check 'a refusal is recorded for the page' { (Read-WfJson (Join-Path $fake 'app-update-status.local')).state -eq 'error' }
+
+        # the real thing
+        $hash = (Get-FileHash $zip -Algorithm SHA256).Hash
+        $null = & "$PSScriptRoot\self-update.ps1" -Root $fake -ZipPath $zip -Version 'v9.9.9' -Digest "sha256:$hash" -NoRestart *>&1
+        Check 'update succeeds'                    { $LASTEXITCODE -eq 0 }
+        Check 'version is stamped'                 { (GetFile 'VERSION') -eq 'v9.9.9' }
+        Check 'app files are replaced'             { (GetFile 'scripts\setup.ps1') -ne 'old setup' -and (GetFile 'ui\index.html') -ne 'old page' -and (GetFile 'README.md') -ne 'old readme' }
+        Check 'files the new version dropped are removed' { $null -eq (GetFile 'scripts\old-only.ps1') }
+        Check 'your server folder is untouched'    { (GetFile 'instances\main\password.local') -eq 'secret' -and (GetFile 'instances\main\settings.json') -eq 'mine' }
+        Check 'the game and SteamCMD are untouched' { (GetFile 'server\Wreckfest2.exe') -eq 'game' -and (GetFile 'steamcmd\steamcmd.exe') -eq 'steam' }
+        Check '*.local files are untouched'        { (GetFile 'steam-user.local') -eq 'someone' -and (GetFile 'latest-build.local') -eq 'cache' }
+        Check 'the old files are backed up'        { (GetFile '.update-backup\scripts\setup.ps1') -eq 'old setup' -and (GetFile '.update-backup\VERSION') -eq 'v0.0.1' }
+        Check 'success is recorded for the page'   { (Read-WfJson (Join-Path $fake 'app-update-status.local')).state -eq 'done' }
+        Check 'the zip carries its own version'    { $z = [IO.Compression.ZipFile]::OpenRead($zip); try { $en = $z.GetEntry('wf2s/VERSION'); $rd = New-Object IO.StreamReader($en.Open()); try { $rd.ReadToEnd() -eq 'v9.9.9' } finally { $rd.Dispose() } } finally { $z.Dispose() } }
+    } finally { Remove-Item $selfWork -Recurse -Force -ErrorAction SilentlyContinue }
+
     Write-Host 'Settings page'
     $port = 30190 + (Get-Random -Maximum 9)
     $ui = Start-Process powershell.exe -PassThru -WindowStyle Hidden -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"' + (Join-Path $PSScriptRoot 'ui.ps1') + '"'), '-Instance', $name, '-Port', $port)
@@ -132,6 +182,9 @@ AppID : 1203190, change number : 2/2, last change : Fri Oct 16 19:19:37 2026
         Check 'state has Steam client info' { $null -ne $state.steam }
         Check 'latest-build answers' { $l = Invoke-RestMethod "http://127.0.0.1:$port/api/latest-build"; $null -ne $l.updateAvailable }
         Check 'starting a check without the header is refused' { try { $null = Invoke-WebRequest "http://127.0.0.1:$port/api/latest-build/check" -Method POST -Body '{}' -UseBasicParsing; $false } catch { $_.Exception.Response.StatusCode.value__ -eq 403 } }
+        Check 'app update status answers' { $null -ne (Invoke-RestMethod "http://127.0.0.1:$port/api/app/update-status").PSObject.Properties['state'] }
+        Check 'latest-build includes this app''s version' { $null -ne (Invoke-RestMethod "http://127.0.0.1:$port/api/latest-build").app }
+        Check 'starting an app update without the header is refused' { try { $null = Invoke-WebRequest "http://127.0.0.1:$port/api/app/update" -Method POST -Body '{}' -UseBasicParsing; $false } catch { $_.Exception.Response.StatusCode.value__ -eq 403 } }
         Check 'network info answers' { $n = Invoke-RestMethod "http://127.0.0.1:$port/api/network"; $n.port -eq 30100 -and $n.protocol -eq 'UDP' }
         Check 'page html has the Network tab' { (Invoke-WebRequest "http://127.0.0.1:$port/" -UseBasicParsing).Content -match 'tab-network' }
         Check 'a wrong Host header is refused' { try { $null = Invoke-WebRequest "http://127.0.0.1:$port/api/state" -Headers @{ Host = 'evil.example' } -UseBasicParsing; $false } catch { $_.Exception.Response.StatusCode.value__ -eq 403 } }
