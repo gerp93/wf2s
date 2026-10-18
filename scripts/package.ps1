@@ -13,7 +13,7 @@ try {
     $zipPath = Join-Path $OutDir "wf2s-$Version.zip"
     if (Test-Path $zipPath) { Remove-Item $zipPath }
 
-    $files = @(& git ls-files) | Where-Object { $_ -and $_ -notmatch '^\.github/' -and $_ -ne '.gitignore' -and $_ -ne '.gitattributes' -and $_ -ne 'VERSION_BUMP.md' }
+    $files = @(& git ls-files) | Where-Object { $_ -and $_ -notmatch '^\.github/' -and $_ -notmatch '^installer/' -and $_ -ne '.gitignore' -and $_ -ne '.gitattributes' -and $_ -ne 'VERSION_BUMP.md' }
     if (-not $files) { throw 'git ls-files returned nothing. Run this inside the git checkout.' }
 
     Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem

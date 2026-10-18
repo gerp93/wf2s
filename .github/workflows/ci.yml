@@ -12,6 +12,24 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Checks (script syntax, defaults, setup, generators, settings page API, packaging)
+      - name: Checks (script syntax, defaults, setup, generators, settings page API, updater, packaging)
         shell: powershell
         run: .\scripts\test.ps1
+
+  installer:
+    # Builds the real installer and installs it on a clean Windows machine: silent install, check, silent uninstall.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Inno Setup
+        shell: powershell
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+      - name: Build the zip and the installer
+        shell: powershell
+        run: |
+          .\scripts\package.ps1 -Version v0.0.0 -OutDir dist
+          .\scripts\build-installer.ps1 -Version v0.0.0 -ZipPath dist\wf2s-v0.0.0.zip -OutDir dist
+      - name: Install, check, uninstall
+        shell: powershell
+        run: .\scripts\test-installer.ps1 -Setup dist\wf2s-setup-v0.0.0.exe -Version v0.0.0
