@@ -22,6 +22,7 @@ try {
     Check 'Start Menu shortcut created' (Test-Path $startMenu)
     Check 'nothing personal or from the game was installed' (-not (Test-Path (Join-Path $dir 'instances')) -and -not (Test-Path (Join-Path $dir 'server')) -and -not (Get-ChildItem $dir -Recurse -Filter '*.local' -ErrorAction SilentlyContinue))
     Check 'uninstaller installed' (Test-Path (Join-Path $dir 'unins000.exe'))
+    Check 'conhost.exe (used to open the setup window) exists' ($null -ne (Get-Command conhost.exe -ErrorAction SilentlyContinue))
 
     Write-Host 'The installed copy works'
     $pw = ConvertTo-SecureString 'installer-test' -AsPlainText -Force
