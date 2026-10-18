@@ -138,6 +138,12 @@ function Handle($ctx) {
         try { $b = Read-Body $req; return SendJson $ctx 200 (Stop-WfServer $save -Force:([bool]$b.force)) }
         catch { return SendJson $ctx 500 @{ error = $_.Exception.Message } }
     }
+    if ($req.HttpMethod -eq 'PUT' -and $path -eq '/api/steam-user') {
+        # Only the account NAME (never a password): it is what the Update server button gives SteamCMD, which asks for the rest itself.
+        try { Set-WfSteamUser $Root ([string](Read-Body $req).user) }
+        catch { return SendJson $ctx 400 @{ error = $_.Exception.Message } }
+        return SendJson $ctx 200 (Get-WfBuildInfo $Root $Server $save)
+    }
     if ($req.HttpMethod -eq 'POST' -and $path -eq '/api/server/update') {
         # Opens scripts\update.ps1 in its own window (SteamCMD may ask for a Steam Guard code). The server must be stopped first.
         try {

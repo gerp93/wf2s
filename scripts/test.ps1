@@ -93,6 +93,7 @@ try {
         Check 'page html has the Network tab' { (Invoke-WebRequest "http://127.0.0.1:$port/" -UseBasicParsing).Content -match 'tab-network' }
         Check 'a wrong Host header is refused' { try { $null = Invoke-WebRequest "http://127.0.0.1:$port/api/state" -Headers @{ Host = 'evil.example' } -UseBasicParsing; $false } catch { $_.Exception.Response.StatusCode.value__ -eq 403 } }
         Check 'a write without the header is refused' { try { $null = Invoke-WebRequest "http://127.0.0.1:$port/api/server/update" -Method POST -Body '{}' -UseBasicParsing; $false } catch { $_.Exception.Response.StatusCode.value__ -eq 403 } }
+        Check 'saving the Steam name without the header is refused' { try { $null = Invoke-WebRequest "http://127.0.0.1:$port/api/steam-user" -Method PUT -Body '{"user":"x"}' -UseBasicParsing; $false } catch { $_.Exception.Response.StatusCode.value__ -eq 403 } }
     } finally { if ($ui -and -not $ui.HasExited) { Stop-Process -Id $ui.Id -Force } }
 
     Write-Host 'Packaging'

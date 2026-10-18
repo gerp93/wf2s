@@ -225,6 +225,7 @@
       <div class="toolbar" style="margin-top:12px; margin-bottom:0">
         <button type="button" class="small" id="build-update">Update server</button>
         <span class="muted">Stops the server, then downloads the latest version of the server from Steam.</span>
+        <span class="muted" id="build-update-why" style="color: var(--color-accent-red)"></span>
       </div>
       <p class="muted" style="margin-top:8px">Players and the server must be on the same game version, or players are refused when they join. Wreckfest 2 is in Early Access and updates often: update the server whenever the game updates.</p>
     </section>
@@ -872,9 +873,18 @@ function showBuild(b) {
     factRow('This config app is tested up to', tested ? el('b', { text: tested }) : el('span', { class: 'muted', text: 'unknown' })),
     factRow('Installed game version', b.gameVersion ? el('span', { text: b.gameVersion }) : el('span', { class: 'muted', text: b.installed ? 'shown once the server has run (players see it in the game’s window title)' : 'not installed' })),
     factRow('Installed server build', b.installed ? el('span', { text: b.installed }) : okText('not installed', false)),
-    factRow('Steam account', el('span', { text: b.steamUser || 'not saved yet' })));
+    factRow('Steam account name', el('form', { id: 'steamform', autocomplete: 'off', style: 'display:flex; gap:8px; align-items:center; flex-wrap:wrap' },
+      el('input', { type: 'text', id: 'steamuser', value: b.steamUser || '', placeholder: 'your Steam sign-in name', maxLength: 64, style: 'width:260px' }),
+      el('button', { type: 'submit', class: 'small', text: 'Save' }),
+      el('span', { class: 'muted', text: 'Only the name, never your password. Steam asks for that itself during the update.' }))));
+  $('steamform').addEventListener('submit', async e => {
+    e.preventDefault();
+    try { showBuild(await send('PUT', '/api/steam-user', { user: $('steamuser').value.trim() })); notice('Steam account name saved.', true); }
+    catch (err) { notice('Not saved: ' + err.message); }
+  });
   $('build-update').disabled = !b.installed || !b.steamUser;
-  $('build-update').title = !b.steamUser ? 'No Steam account name is saved yet. Run  scripts\\install.ps1 -SteamUser YOUR_NAME  once (it also checks the install), then this button works.' : '';
+  $('build-update').title = '';
+  $('build-update-why').textContent = !b.installed ? '' : !b.steamUser ? 'Enter your Steam account name above and click Save to enable this button.' : '';
 }
 
 const NET_ADVICE = {
