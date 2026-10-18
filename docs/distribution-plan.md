@@ -64,8 +64,8 @@ Not done / not true yet:
    and make SteamCMD the fallback. If no: SteamCMD stays, with Steam Guard prompts explained in the UI.
 3. **Admin Steam ID.** Ask for it (profile URL or number), or offer to read it from the local Steam install with the user's consent.
    Never read or store Steam passwords or tokens.
-4. **Distribution format.** A zip from a GitHub release (recommended) vs. "git clone". Needs a repo decision (the owner's rules say
-   `wf2s` is *not* one of the auto-merge repos: open the PR, leave it open, tell the owner).
+4. **Distribution format.** A zip from a GitHub release (recommended) vs. "git clone". The repo is public (decided
+   2026-10-18).
 5. **License.** The owner's standard is AGPL-3.0 (`KVG_Standards`); confirm, then add `LICENSE`.
 6. **Remote editing** (other people using the page from other PCs) is a separate, later project. Plan agreed in conversation:
    Tailscale node sharing + a "listen on" setting + a per-person key with roles + a change log. Do not start it here.
@@ -77,7 +77,7 @@ Not done / not true yet:
   session's apply / start-stop / layered defaults / cup-generation work). Do not discard anything.
 - Remove personal data from the tree before any release: `instances/main/cups-backup/`, personal `settings.json`, personal cups.
   Keep the owner's instance working locally (move it out of the tracked paths, or gitignore it), do **not** delete it.
-- Commit on `settings-ui`, open a PR, leave it open (repo is not in the owner's auto-merge list). Check the PR state first
+- Commit on `settings-ui`, open a PR (done: PR #1, later PR #2). Check the PR state first
   (`gh pr view`) as the owner's global rules require.
 
 ### 2. A clean default instance
@@ -154,4 +154,4 @@ Not done / not true yet:
   (use `Write-WfJson`), an empty string argument to a native exe is dropped, `Start-Process` arguments need their own quotes.
 - Settings layers are page logic: event own value > cup > Global default > file. The game only sees merged files.
 - The page binds to `127.0.0.1` and rejects other hosts; changing writes need the `X-WF-UI` header. Keep both.
-- Git: the owner's rules say verify PR state before pushing, never push to the default branch, `wf2s` is not an auto-merge repo.
+- Git: the owner's rules say verify PR state before pushing, never push to the default branch. `wf2s` was added to the owner's in-scope repo list on 2026-10-18: ship finished changes (push, PR, auto-merge) and check the build on `main` afterwards.
