@@ -302,7 +302,7 @@ function refreshApply() {
 }
 const savedMsg = () => SERVER_RUNNING ? 'Saved. Click “Apply now” to push it to the running server, or restart the server.' : 'Saved. It takes effect the next time the server starts.';
 $('apply').addEventListener('click', async () => {
-  if (!confirm('Apply the saved settings to the running server now?\n\nThe rotation reloads and the current track restarts, so a race in progress would restart. Name, password and ban settings still need a restart.')) return;
+  if (!confirm('Apply the saved settings to the running server now?\n\nThe rotation reloads and the current track restarts, so a race in progress would restart. If a cup is running nothing is pushed (apply after it finishes). Name, password and ban settings still need a restart.')) return;
   APPLYING = true; $('apply').textContent = 'Applying…'; refreshApply();
   try {
     const r = await send('POST', '/api/apply', {});
