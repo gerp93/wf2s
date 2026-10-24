@@ -216,7 +216,9 @@ saved rotation and cups to the **running** server. It regenerates the files, the
 jumps back to the track that was running with `eventloop select`.
 - Players stay on the server and nothing needs a restart, but the reload **restarts the current track** (a race in
   progress restarts) and briefly loads the first track on the way. Apply between races.
-- `cup reload` is refused by the server while a cup is running; the page tells you and you can apply again afterwards.
+- **While a cup is running Apply now does nothing to the server** (it asks the console with `cup` first). Reloading the
+  rotation mid-cup would swap the cup's races for the main rotation while the server still counts "race 1 of 6". The files
+  are still written; apply again when the cup has finished, or restart.
 - Name, password, port and ban settings are only read at startup and still need a restart.
 - It finds the server by its `--save-dir`, so it only ever touches the instance the page is for. The server needs a console
   window (it has one when started with `start.ps1`, including from Hardpoint).

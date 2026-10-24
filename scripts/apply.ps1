@@ -5,6 +5,9 @@
 #  - `eventloop reload` re-reads default_loop.becl and applies it (bots, laps, ...), but it also restarts the loop at its
 #    first event and reloads the level. To avoid yanking the session to another track we jump back with `eventloop select`.
 #  - `cup reload` re-reads the cup config, and the server refuses it while a cup is active.
+#  - `cup` prints "Cup is inactive." / "Cup is active.". `eventloop reload` DURING a cup replaces the cup's events with the main
+#    rotation while the server still reports the cup as active (a cup "race 1 of 6" then runs main-rotation tracks), so Apply does
+#    nothing live while a cup is running.
 #  - Server name, password, port and ban settings are only read at startup: those still need a restart.
 
 # The running server for an instance: the Wreckfest2.exe whose command line has --save-dir=<this instance folder>.
@@ -51,6 +54,18 @@ function Invoke-WfApply([string]$InstanceDir, [string]$ServerDir) {
             message = 'The server is not running. The files are updated and will be used the next time it starts.' }
     }
     $srvPid = [int]$proc.ProcessId
+
+    # 1b. a cup in progress must be left alone. `eventloop reload` swaps the cup's own events for the main rotation while the
+    # server still counts the cup ("race 1 of 6"), so the cup would carry on with the main rotation's tracks. Tested.
+    $screen = Invoke-WfConsole $srvPid @('cup') 20
+    $cupLine = @(Get-WfAfterCommand $screen 'cup') | Where-Object { $_ -match '^Cup is (\w+)\.' } | Select-Object -First 1
+    $cupState = if ($cupLine -match '^Cup is (\w+)\.') { $Matches[1] } else { $null }
+    if ($cupState -ne 'inactive') {
+        $why = if ($cupState) { "A cup is in progress (the server says it is $cupState)." } else { 'Could not tell whether a cup is running.' }
+        $steps.Add("$why The running server was not touched, so the cup keeps its own races.")
+        return [ordered]@{ running = $true; applied = $false; steps = @($steps)
+            message = 'Nothing was pushed live. Apply again once the cup has finished (or abandon it), or restart the server.' }
+    }
 
     # 2. which track is running now (the server prints the active event as JSON, including "eventId")
     $current = $null
