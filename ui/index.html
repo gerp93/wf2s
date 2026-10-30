@@ -104,6 +104,13 @@
   .vals .fact { display: grid; grid-template-columns: 220px 1fr auto; gap: 4px 12px; align-items: center; padding: 8px 0; border-top: 1px solid var(--color-border); }
   .vals .fact:first-child { border-top: 0; }
   .vals .fact .val { font-weight: 700; font-size: 1.05rem; color: var(--color-accent-blue); font-family: ui-monospace, Consolas, monospace; overflow-wrap: anywhere; }
+  /* someone signed in remotely can't update the app or the game server (those open windows on the host PC) */
+  body.remote #build-update-row, body.remote #app-update-row, body.remote #app-banner, body.remote #update-banner { display: none !important; }
+  .logrow { display: grid; grid-template-columns: 190px 200px 1fr; gap: 4px 12px; padding: 6px 0; border-top: 1px solid var(--color-border); font-size: .9rem; }
+  .logrow:first-child { border-top: 0; }
+  .logrow .via { font-size: .75rem; color: var(--color-text-muted); }
+  @media (max-width: 700px) { .logrow { grid-template-columns: 1fr; } }
+  pre.code { background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 4px; padding: 8px 10px; overflow-x: auto; font-size: .8rem; margin: 8px 0; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -111,6 +118,8 @@
 <header>
   <h1>Wreckfest 2 &middot; Server Settings</h1>
   <span style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+    <span class="muted" id="who" hidden></span>
+    <button id="signout" class="small" hidden>Sign out</button>
     <span class="muted" id="instance" title="The server instance (instances/<name>) this page edits"></span>
     <button id="apply" class="small" disabled title="Push your saved changes to the running server">Apply now</button>
     <button id="srv" class="small" disabled title="Start or stop this instance's server">Start server</button>
@@ -123,6 +132,8 @@
   <button data-tab="cups">Cups</button>
   <button data-tab="password">Password</button>
   <button data-tab="network">Network &amp; version</button>
+  <button data-tab="remote">Remote access</button>
+  <button data-tab="activity">Activity</button>
 </nav>
 <main>
   <div id="notice" class="notice"></div>
@@ -173,6 +184,60 @@
       <h2>History</h2>
       <p class="muted" style="margin-bottom:8px">When the password was changed. Only the date and where it was changed from are kept, never the password.</p>
       <div id="pwhistory"></div>
+    </section>
+  </div>
+
+  <div id="tab-activity" hidden>
+    <section class="card">
+      <h2>Activity</h2>
+      <p class="muted" style="margin-bottom:8px">Who changed what, newest first. People signed in remotely are listed by the name they typed (and the Tailscale account Tailscale reports, when it does). Only the action is kept, never the content, so passwords cannot end up here.</p>
+      <div class="toolbar"><button type="button" class="small" id="log-refresh">Refresh</button></div>
+      <div id="log"></div>
+    </section>
+  </div>
+
+  <div id="tab-remote" hidden>
+    <section class="card">
+      <h2>Let other people manage this server</h2>
+      <p style="margin-bottom:8px">With remote access on, people you invite can open this same page from their own PC or phone, behind a password, over <b>Tailscale</b> (a private network that needs no router changes). It is for managing the server: the game itself is still joined through your router as before. Setup is in the README (&ldquo;Remote control&rdquo;); the steps below are the parts done on this page.</p>
+      <div id="rem-status" class="info"></div>
+    </section>
+    <section class="card">
+      <h2>1. Password</h2>
+      <p class="muted" id="rem-pwstate" style="margin-bottom:8px"></p>
+      <form id="rem-pwform" autocomplete="off" class="toolbar" style="margin-bottom:0">
+        <input type="password" id="rem-pw" placeholder="New remote password (8+ characters)" maxlength="128" autocomplete="new-password" style="flex:1; min-width:240px; max-width:none; width:auto">
+        <button type="submit" id="rem-pwsave" disabled>Set password</button>
+      </form>
+      <p class="muted" style="margin-top:8px">One shared password. Only a scrambled version is kept, on this PC (<code>remote-password.local</code>, never in git). It is not the server password players use. Setting a new one signs everyone out.</p>
+    </section>
+    <section class="card">
+      <h2>2. Tailscale name and switch</h2>
+      <div class="toolbar">
+        <input type="text" id="rem-host" placeholder="this-pc.your-tailnet.ts.net" maxlength="253" style="flex:1; min-width:260px; max-width:none; width:auto">
+        <button type="button" class="small" id="rem-detect">Detect from Tailscale</button>
+      </div>
+      <div class="toolbar">
+        <label style="display:inline-flex; gap:8px; align-items:center; cursor:pointer"><input type="checkbox" id="rem-on"> Remote access is on</label>
+        <button type="button" id="rem-save" disabled>Save</button>
+      </div>
+      <p class="muted">The name is how people reach this PC; it is saved on this PC only. While this is on, the program also listens on a second, password-protected local port that only Tailscale forwards to.</p>
+    </section>
+    <section class="card">
+      <h2>3. Share it with Tailscale Serve</h2>
+      <p class="muted" id="rem-servestate" style="margin-bottom:8px"></p>
+      <div class="toolbar">
+        <button type="button" id="rem-serve-on" disabled>Turn on Serve</button>
+        <button type="button" class="small" id="rem-serve-off" disabled>Turn off Serve</button>
+      </div>
+      <div id="rem-serve-err" class="notice" style="margin-top:8px"></div>
+      <p class="muted">Address to give people: <code id="rem-url">(set the name above first)</code></p>
+    </section>
+    <section class="card">
+      <h2>4. Limit what invited people can reach</h2>
+      <p class="muted" style="margin-bottom:8px">In Tailscale's admin console (Access controls &rarr; JSON editor), make sure people you invite can reach only this page and nothing else on this PC. This goes in the <code>grants</code> list, next to a rule that lets you reach everything:</p>
+      <pre class="code" id="rem-policy">(needs Tailscale to be running)</pre>
+      <div class="toolbar" style="margin-bottom:0"><button type="button" class="small" id="rem-policy-copy">Copy</button></div>
     </section>
   </div>
 
@@ -263,6 +328,7 @@ function el(tag, props, ...kids) {
 }
 async function api(path, opts) {
   const res = await fetch(path, opts);
+  if (res.status === 401) { location.reload(); throw new Error('Signed out. Reloading to sign in again.'); }   // remote visitors only: the sign-in page comes back
   let data = null; try { data = await res.json(); } catch { /* no body */ }
   if (!res.ok) throw new Error((data && data.error) || res.statusText);
   return data;
@@ -1087,10 +1153,87 @@ async function loadLatest(force) {
 }
 setInterval(() => loadLatest(false), 3600 * 1000);
 
+// ---- activity log ----
+async function loadActivity() {
+  try {
+    const entries = (await api('/api/activity')).entries || [];
+    $('log').replaceChildren(...(entries.length ? entries.map(e => el('div', { class: 'logrow' },
+      el('span', { class: 'muted', text: new Date(e.at).toLocaleString() }),
+      el('span', {}, el('b', { text: e.who }), e.via ? el('div', { class: 'via', text: 'Tailscale: ' + e.via }) : null),
+      el('span', { text: e.action }))) : [el('p', { class: 'muted', text: 'Nothing yet.' })]));
+  } catch (e) { notice('Could not load the activity log: ' + e.message); }
+}
+$('log-refresh').addEventListener('click', loadActivity);
+
+// ---- remote access (only on the PC that runs the server) ----
+let REMOTE = null, REMOTE_VIEWER = false;
+async function loadRemote() {
+  try { REMOTE = await api('/api/remote'); } catch (e) { notice('Could not load remote access: ' + e.message); return; }
+  renderRemote();
+}
+function remoteUrl() {
+  const h = (REMOTE.config.hosts || [])[0]; if (!h) return '';
+  return 'https://' + h + (REMOTE.config.servePort === 443 ? '' : ':' + REMOTE.config.servePort);
+}
+function renderRemote() {
+  const r = REMOTE, c = r.config, ts = r.tailscale;
+  const lines = [];
+  if (!ts.installed) lines.push('Tailscale is not installed on this PC (tailscale.com/download).');
+  else if (!ts.running) lines.push('Tailscale is installed but not connected. Open it and sign in.');
+  if (r.listenError) lines.push(r.listenError);
+  $('rem-status').replaceChildren(...lines.map(l => el('div', { text: l })));
+  $('rem-pwstate').textContent = r.passwordSet ? 'A remote password is set. Setting another replaces it and signs everyone out.' : 'No remote password yet. Remote access stays closed until you set one.';
+  $('rem-host').value = (c.hosts || []).join(', ');
+  $('rem-on').checked = c.enabled;
+  $('rem-save').disabled = false;
+  $('rem-pwsave').disabled = $('rem-pw').value.length < 8;
+  $('rem-servestate').textContent = !r.listening ? 'Not available yet: switch remote access on (step 2) with a password set.'
+    : r.serveOn ? 'On: Tailscale forwards ' + (remoteUrl() || 'your Tailscale name') + ' to this page, behind the password.'
+    : 'Off: nobody can reach the password page yet.';
+  $('rem-serve-on').disabled = !r.listening || r.serveOn;
+  $('rem-serve-off').disabled = !r.serveOn;
+  $('rem-url').textContent = remoteUrl() || '(set the name above first)';
+  const ip = (ts.ips || [])[0];
+  $('rem-policy').textContent = ip
+    ? '{ "src": ["autogroup:shared"], "dst": ["' + ip + '"], "ip": ["tcp:' + c.servePort + '"] }'
+    : '(needs Tailscale to be running)';
+}
+async function saveRemote() {
+  try {
+    REMOTE = await send('PUT', '/api/remote', { enabled: $('rem-on').checked, hosts: $('rem-host').value.split(/[,\s]+/).filter(Boolean) });
+    notice('Remote access settings saved.', true); renderRemote();
+  } catch (e) { notice(e.message); }
+}
+$('rem-save').addEventListener('click', saveRemote);
+$('rem-detect').addEventListener('click', async () => {
+  await loadRemote();
+  if (REMOTE && REMOTE.tailscale.dnsName) $('rem-host').value = REMOTE.tailscale.dnsName; else notice('Tailscale did not report a name. Is it running, with MagicDNS on?');
+});
+$('rem-pw').addEventListener('input', () => { $('rem-pwsave').disabled = $('rem-pw').value.length < 8; });
+$('rem-pwform').addEventListener('submit', async e => {
+  e.preventDefault();
+  try { REMOTE = await send('PUT', '/api/remote/password', { password: $('rem-pw').value }); $('rem-pw').value = ''; notice('Remote password set. Everyone was signed out.', true); renderRemote(); }
+  catch (err) { notice(err.message); }
+});
+async function setServe(on) {
+  $('rem-serve-err').textContent = '';
+  try { REMOTE = await send('POST', '/api/remote/serve', { on }); renderRemote(); }
+  catch (e) {
+    $('rem-serve-err').textContent = e.message + (on ? ' You can also run this yourself in a terminal: tailscale serve --bg --https=' + REMOTE.config.servePort + ' http://127.0.0.1:' + REMOTE.config.port : '');
+  }
+}
+$('rem-serve-on').addEventListener('click', () => setServe(true));
+$('rem-serve-off').addEventListener('click', () => setServe(false));
+$('rem-policy-copy').addEventListener('click', async () => { try { await navigator.clipboard.writeText($('rem-policy').textContent); notice('Copied.', true); } catch { notice('Select the text and copy it.'); } });
+$('signout').addEventListener('click', async () => { try { await send('POST', '/api/logout', {}); } catch { /* reload either way */ } location.reload(); });
+
 // ---- tabs / startup ----
+const TABS = ['rotation', 'cups', 'global', 'password', 'network', 'remote', 'activity'];
 function show(tab) {
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
-  for (const t of ['rotation', 'cups', 'global', 'password', 'network']) $('tab-' + t).hidden = t !== tab;
+  for (const t of TABS) $('tab-' + t).hidden = t !== tab;
+  if (tab === 'remote') loadRemote();
+  if (tab === 'activity') loadActivity();
   if (tab === 'network' && typeof loadNetwork === 'function') loadNetwork();
   if (tab !== 'password' && typeof hidePassword === 'function') hidePassword();
   try { history.replaceState(null, '', '#' + tab); } catch { /* ignore */ }
@@ -1118,6 +1261,12 @@ async function pollStatus() { try { setStatus((await api('/api/state')).running)
     fill('dl-damage', choices.damage); fill('dl-cars', choices.cars); fill('dl-start', choices.startOrders); fill('dl-collect', choices.collectingOrders);
     fill('dl-flags', ['reverse rule']);
     STEAM = state.steam || null;
+    if (state.viewer && state.viewer.remote) {   // signed in remotely: show who, offer Sign out, hide the host-only tab
+      REMOTE_VIEWER = true;
+      document.body.classList.add('remote');
+      $('who').textContent = 'Signed in as ' + state.viewer.name; $('who').hidden = false; $('signout').hidden = false;
+      document.querySelector('#tabs [data-tab="remote"]').hidden = true;
+    }
     showBuild(state.build);
     loadLatest(false);
     buildGlobal(state); setStatus(state.running); showPasswordState(state.passwordSet); showPasswordHistory(state.passwordHistory);
@@ -1126,7 +1275,7 @@ async function pollStatus() { try { setStatus((await api('/api/state')).running)
     showOverrideInfo(OVERRIDES);
     await loopEditor('main', $('rot'));
     await cupsTab();
-    const t = location.hash.slice(1); show(['rotation', 'cups', 'global', 'password', 'network'].includes(t) ? t : 'global');   // Global overrides is the first tab and the one that opens
+    const t = location.hash.slice(1); show(TABS.includes(t) && !(REMOTE_VIEWER && t === 'remote') ? t : 'global');   // Global overrides is the first tab and the one that opens
   } catch (e) { notice('Could not load settings: ' + e.message); }
   setInterval(pollStatus, 15000);
 })();

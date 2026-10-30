@@ -192,6 +192,120 @@ AppID : 1203190, change number : 2/2, last change : Fri Oct 16 19:19:37 2026
         Check 'saving the Steam name without the header is refused' { try { $null = Invoke-WebRequest "http://127.0.0.1:$port/api/steam-user" -Method PUT -Body '{"user":"x"}' -UseBasicParsing; $false } catch { $_.Exception.Response.StatusCode.value__ -eq 403 } }
     } finally { if ($ui -and -not $ui.HasExited) { Stop-Process -Id $ui.Id -Force } }
 
+    Write-Host 'Remote access (unit)'
+    Check 'remote config is off by default'      { $c = Get-WfRemoteConfig $dir; (-not $c.enabled) -and $c.port -eq 30181 -and @($c.hosts).Count -eq 0 }
+    Check 'remote config round trips, names cleaned' { $c = Set-WfRemoteConfig $dir $true @('My-PC.Example.ts.net.', 'my-pc.example.ts.net') 30185 443 30180; $c.enabled -and @($c.hosts).Count -eq 1 -and $c.hosts[0] -eq 'my-pc.example.ts.net' -and (Get-WfRemoteConfig $dir).port -eq 30185 }
+    Check 'remote config refuses the page''s own port' { try { $null = Set-WfRemoteConfig $dir $true @() 30180 443 30180; $false } catch { $true } }
+    Check 'remote config refuses a bad host name'  { try { $null = Set-WfRemoteConfig $dir $true @('bad host/x') 30185 443 30180; $false } catch { $true } }
+    Check 'a damaged remote.json means off'       { [IO.File]::WriteAllText((Join-Path $dir 'remote.json'), '{nope'); -not (Get-WfRemoteConfig $dir).enabled }
+    $rc = [pscustomobject]@{ hosts = @('my-pc.example.ts.net') }
+    Check 'host header: the configured name is accepted (any port)' { (Test-WfRemoteHostHeader 'my-pc.example.ts.net' $rc) -and (Test-WfRemoteHostHeader 'MY-PC.example.ts.net:8443' $rc) }
+    Check 'host header: other names are refused'  { -not ((Test-WfRemoteHostHeader 'evil.example' $rc) -or (Test-WfRemoteHostHeader '' $rc) -or (Test-WfRemoteHostHeader 'my-pc.example.ts.net.evil.example' $rc)) }
+    Check 'password: refuses short, long and control characters' { $r = 'short', ('x' * 129), "abcd`nefgh" | ForEach-Object { try { Set-WfRemotePassword $dir $_; $false } catch { $true } }; -not ($r -contains $false) }
+    Check 'password: none set yet'                { -not (Test-WfRemotePasswordSet $dir) }
+    Set-WfRemotePassword $dir '  correct horse battery  '
+    Check 'password: right one accepted, wrong refused' { (Test-WfRemotePassword $dir 'correct horse battery') -and -not (Test-WfRemotePassword $dir 'correct horse batter') -and -not (Test-WfRemotePassword $dir $null) -and -not (Test-WfRemotePassword $dir '') }
+    Check 'password: file holds a salted hash, not the password' { $t = [IO.File]::ReadAllText((Join-Path $dir 'remote-password.local')); $t -like 'pbkdf2-sha256$*' -and $t -notmatch 'horse' }
+    Check 'password: two hashes of one password differ (salted)' { (New-WfPasswordHash 'same password') -ne (New-WfPasswordHash 'same password') }
+    Check 'sign-in names'                         { ((ConvertTo-WfPersonName '  Mike  Smith ') -eq 'Mike Smith') -and ($null -eq (ConvertTo-WfPersonName '')) -and ($null -eq (ConvertTo-WfPersonName 'a<b>')) -and ($null -eq (ConvertTo-WfPersonName ('x' * 33))) -and ($null -eq (ConvertTo-WfPersonName 5)) }
+    $tok = New-WfSession 'Mike'
+    Check 'session: valid, and a made-up token is not' { ((Get-WfSession $tok).name -eq 'Mike') -and ($null -eq (Get-WfSession 'nope')) -and ($null -eq (Get-WfSession '')) }
+    Check 'session: tokens are long and unique'   { $tok.Length -ge 40 -and (New-WfSession 'x') -ne $tok }
+    Check 'session: removed on sign-out'          { Remove-WfSession $tok; $null -eq (Get-WfSession $tok) }
+    Check 'session: an expired one is refused'    { $t2 = New-WfSession 'Old'; $script:WfSessions[$t2].expires = [DateTime]::UtcNow.AddMinutes(-1); $null -eq (Get-WfSession $t2) }
+    Check 'session: a new password signs everyone out' { $t3 = New-WfSession 'A'; Set-WfRemotePassword $dir 'another password'; $null -eq (Get-WfSession $t3) }
+    Clear-WfLoginFailures
+    Check 'lockout: open, then locked after five wrong passwords, then open again' {
+        $a = Get-WfLoginLockSeconds; 1..5 | ForEach-Object { Add-WfLoginFailure }; $b = Get-WfLoginLockSeconds
+        $script:WfLoginFailures.Clear(); 1..5 | ForEach-Object { $script:WfLoginFailures.Add([DateTime]::UtcNow.AddMinutes(-11)) }; $c = Get-WfLoginLockSeconds
+        ($a -eq 0) -and ($b -gt 0 -and $b -le 600) -and ($c -eq 0) }
+    Clear-WfLoginFailures
+    Add-WfActivity $dir 'Mike (remote)' 'Saved the cups' 'mike@example.com'; Add-WfActivity $dir 'This PC' 'Started the server'
+    Check 'activity log: newest first, with who and what' { $l = @(Read-WfActivity $dir); $l.Count -eq 2 -and $l[0].action -eq 'Started the server' -and $l[1].who -eq 'Mike (remote)' -and $l[1].via -eq 'mike@example.com' }
+    Check 'activity log is cut back to its newest lines when it gets big' {
+        $script:WfActivityMaxBytes = 8KB; $script:WfActivityKeepLines = 50
+        try { 1..100 | ForEach-Object { Add-WfActivity $dir 'x' ('y' * 60) }; $n = @([IO.File]::ReadAllLines((Join-Path $dir 'activity-log.jsonl'))).Count; ($n -lt 90) -and ($n -ge 25) -and (@(Read-WfActivity $dir 5)[0].action -eq ('y' * 60)) }
+        finally { $script:WfActivityMaxBytes = 512KB; $script:WfActivityKeepLines = 1000 } }
+    Check 'activity labels: changes are named, reads and the password are not' {
+        ((Get-WfActivityLabel 'PUT' '/api/cups') -eq 'Saved the cups') -and ((Get-WfActivityLabel 'POST' '/api/server/stop' '' $true) -eq 'Force-stopped the server') -and
+        ((Get-WfActivityLabel 'PUT' '/api/loop' 'my cup!') -eq "Saved the events of cup 'mycup'") -and ($null -eq (Get-WfActivityLabel 'GET' '/api/state')) -and ($null -eq (Get-WfActivityLabel 'POST' '/api/latest-build/check')) }
+
+    Write-Host 'Remote access (the second listener)'
+    # One request helper that can set the Host header and cookies, and returns the status even for 4xx (Invoke-WebRequest can't set Host on 5.1).
+    function Req([string]$Method, [string]$Url, [string]$HostHeader = '', $Body = $null, [string]$Cookie = '', [switch]$NoHeader) {
+        $r = [Net.HttpWebRequest]::Create($Url); $r.Method = $Method; $r.AllowAutoRedirect = $false; $r.Timeout = 10000
+        if ($HostHeader) { $r.Host = $HostHeader }
+        if ($Cookie) { $r.Headers.Add('Cookie', $Cookie) }
+        if ($Method -in 'PUT', 'POST') {
+            if (-not $NoHeader) { $r.Headers.Add('X-WF-UI', '1') }
+            $r.ContentType = 'application/json'; $bytes = [Text.Encoding]::UTF8.GetBytes($(if ($null -eq $Body) { '{}' } else { ConvertTo-Json -InputObject $Body -Compress }))
+            $r.ContentLength = $bytes.Length; $s = $r.GetRequestStream(); $s.Write($bytes, 0, $bytes.Length); $s.Close()
+        }
+        try { $resp = $r.GetResponse() } catch [Net.WebException] { $resp = $_.Exception.Response; if (-not $resp) { throw } }
+        $text = (New-Object IO.StreamReader($resp.GetResponseStream())).ReadToEnd()
+        $out = [pscustomobject]@{ status = [int]$resp.StatusCode; body = $text; setCookie = $resp.Headers['Set-Cookie']; headers = $resp.Headers }
+        $resp.Close(); $out
+    }
+    $rport = 30200 + (Get-Random -Maximum 9); $lport = 30210 + (Get-Random -Maximum 9)
+    $rhost = 'my-pc.example.ts.net'
+    $null = Set-WfRemoteConfig $dir $true @($rhost) $rport 443 $lport
+    Set-WfRemotePassword $dir 'ci remote password'
+    Remove-Item (Join-Path $dir 'activity-log.jsonl') -ErrorAction SilentlyContinue
+    $ui2 = Start-Process powershell.exe -PassThru -WindowStyle Hidden -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"' + (Join-Path $PSScriptRoot 'ui.ps1') + '"'), '-Instance', $name, '-Port', $lport)
+    try {
+        $R = "http://127.0.0.1:$rport"; $L = "http://127.0.0.1:$lport"
+        $up = $false; for ($i = 0; $i -lt 30 -and -not $up; $i++) { Start-Sleep -Milliseconds 500; try { $up = (Req GET "$R/" $rhost).status -eq 200 } catch { } }
+        Check 'remote listener answers' { $up }
+        Check 'not signed in: the page is the sign-in page' { $p = Req GET "$R/" $rhost; $p.body -match 'id="pw"' -and $p.body -notmatch 'tab-rotation' }
+        Check 'not signed in: the API is refused'          { (Req GET "$R/api/state" $rhost).status -eq 401 }
+        Check 'not signed in: a change is refused'         { (Req PUT "$R/api/cups" $rhost @{}).status -eq 401 }
+        Check 'a wrong Host header is refused'             { (Req GET "$R/" 'evil.example').status -eq 403 }
+        Check 'the theme css is served without signing in' { (Req GET "$R/vendor/visual-assault-themes.css" $rhost).status -eq 200 }
+        Check 'responses carry security headers'           { $h = (Req GET "$R/" $rhost).headers; $h['X-Content-Type-Options'] -eq 'nosniff' -and $h['X-Frame-Options'] -eq 'DENY' }
+        Check 'sign-in without the custom header is refused' { (Req POST "$R/api/login" $rhost @{ name = 'Mike'; password = 'ci remote password' } -NoHeader).status -eq 403 }
+        Check 'sign-in needs a valid name'                 { (Req POST "$R/api/login" $rhost @{ name = '<b>'; password = 'ci remote password' }).status -eq 400 }
+        Check 'a wrong password is refused'                { (Req POST "$R/api/login" $rhost @{ name = 'Mike'; password = 'nope nope nope' }).status -eq 401 }
+        $ok = Req POST "$R/api/login" $rhost @{ name = 'Mike'; password = 'ci remote password' }
+        Check 'the right password signs in'                { $ok.status -eq 200 }
+        Check 'the cookie is HttpOnly and SameSite=Strict' { $ok.setCookie -match '^wf_session=' -and $ok.setCookie -match 'HttpOnly' -and $ok.setCookie -match 'SameSite=Strict' }
+        $ck = ($ok.setCookie -split ';')[0]
+        $st = Req GET "$R/api/state" $rhost -Cookie $ck
+        Check 'signed in: the state says who and that it is remote' { $s = $st.body | ConvertFrom-Json; $st.status -eq 200 -and $s.viewer.remote -and $s.viewer.name -eq 'Mike' }
+        Check 'signed in: the password is not in the state' { $st.body -notmatch 'ci-test-password' -and $st.body -notmatch 'ci remote password' }
+        Check 'signed in: the real page is served'         { (Req GET "$R/" $rhost -Cookie $ck).body -match 'tab-rotation' }
+        Check 'signed in: a change still needs the header' { (Req PUT "$R/api/cups" $rhost @{} -Cookie $ck -NoHeader).status -eq 403 }
+        foreach ($p in '/api/remote', '/api/app/update', '/api/server/update', '/api/steam-user') {
+            $m = if ($p -eq '/api/remote') { 'GET' } else { 'POST' }
+            Check "signed in: $p is for the host PC only" { (Req $m "$R$p" $rhost @{} -Cookie $ck).status -eq 403 }
+        }
+        Check 'signed in: remote settings can not be changed remotely' { (Req PUT "$R/api/remote/password" $rhost @{ password = 'hijacked password' } -Cookie $ck).status -eq 403 -and (Test-WfRemotePassword $dir 'ci remote password') }
+        $ov = Req PUT "$R/api/overrides" $rhost @{ overrides = @{ name = 'Renamed remotely' } } -Cookie $ck
+        Check 'signed in: a change goes through'           { $ov.status -eq 200 -and (Read-WfOverrides $dir)['name'] -eq 'Renamed remotely' }
+        Check 'the change is in the activity log, with the name' { $a = @((Req GET "$R/api/activity" $rhost -Cookie $ck).body | ConvertFrom-Json | ForEach-Object { $_.entries }); ($a | Where-Object { $_.who -eq 'Mike (remote)' -and $_.action -eq 'Saved the Global defaults' }) -and ($a | Where-Object { $_.action -eq 'Signed in' }) }
+        Check 'a local (this PC) request needs no login'    { (Req GET "$L/api/state" "127.0.0.1:$lport").status -eq 200 -and ((Req GET "$L/api/state" "127.0.0.1:$lport").body | ConvertFrom-Json).viewer.remote -eq $false }
+        Check 'local: remote settings answer'              { $rs = (Req GET "$L/api/remote" "127.0.0.1:$lport").body | ConvertFrom-Json; $rs.listening -and $rs.passwordSet -and $rs.config.hosts[0] -eq $rhost }
+        Check 'the sign-in cookie does not work on the local listener as a way in to anything extra' { ((Req GET "$L/api/state" "127.0.0.1:$lport" -Cookie $ck).body | ConvertFrom-Json).viewer.name -eq 'This PC' }
+        $out = Req POST "$R/api/logout" $rhost @{} -Cookie $ck
+        Check 'sign-out ends the session'                  { $out.status -eq 200 -and (Req GET "$R/api/state" $rhost -Cookie $ck).status -eq 401 }
+        Check 'sign-in is locked after five wrong passwords' {
+            1..5 | ForEach-Object { $null = Req POST "$R/api/login" $rhost @{ name = 'Eve'; password = 'wrong wrong wrong' } }
+            $locked = Req POST "$R/api/login" $rhost @{ name = 'Mike'; password = 'ci remote password' }
+            $locked.status -eq 429 -and [int]$locked.headers['Retry-After'] -gt 0 }
+        Check 'switching remote access off closes the listener' {
+            $off = Req PUT "$L/api/remote" "127.0.0.1:$lport" @{ enabled = $false; hosts = @($rhost) }
+            Start-Sleep -Milliseconds 500
+            $closed = $false; try { $null = Req GET "$R/" $rhost } catch { $closed = $true }
+            $off.status -eq 200 -and $closed }
+        Check 'switching it on needs a password set'       { Remove-Item (Join-Path $dir 'remote-password.local'); (Req PUT "$L/api/remote" "127.0.0.1:$lport" @{ enabled = $true; hosts = @($rhost) }).status -eq 400 }
+        Check 'switching it on with a password opens the listener again' {
+            $pr = Req PUT "$L/api/remote/password" "127.0.0.1:$lport" @{ password = 'second ci password' }
+            $on = Req PUT "$L/api/remote" "127.0.0.1:$lport" @{ enabled = $true; hosts = @($rhost) }
+            Start-Sleep -Milliseconds 500
+            $pr.status -eq 200 -and $on.status -eq 200 -and (Req GET "$R/" $rhost).status -eq 200 }
+        Check 'the local page lists the new tabs'          { $pg = (Req GET "$L/" "127.0.0.1:$lport").body; $pg -match 'data-tab="remote"' -and $pg -match 'data-tab="activity"' }
+        Check 'the activity log never holds a password'    { $t = [IO.File]::ReadAllText((Join-Path $dir 'activity-log.jsonl')); $t -notmatch 'ci remote password|second ci password|hijacked' }
+    } finally { if ($ui2 -and -not $ui2.HasExited) { Stop-Process -Id $ui2.Id -Force } }
+
     Write-Host 'Packaging'
     $out = Join-Path ([IO.Path]::GetTempPath()) "wf2s-test-$([guid]::NewGuid().ToString('N'))"
     try {

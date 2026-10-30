@@ -200,6 +200,7 @@ function Set-WfPassword([string]$InstanceDir, $Password, [string]$By = 'settings
 . "$PSScriptRoot\instance.ps1" # create an instance from defaults\instance, Steam name, admins
 . "$PSScriptRoot\network.ps1"  # port forwarding help and the installed game build
 . "$PSScriptRoot\appupdate.ps1" # this app's own version and self-update
+. "$PSScriptRoot\remote.ps1"    # remote control over Tailscale: password, sessions, activity log
 
 # Generates default_loop.becl from its template plus the overrides. No-op when there is no template.
 function Build-WfLoop([string]$InstanceDir) {
