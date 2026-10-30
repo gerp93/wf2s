@@ -113,7 +113,10 @@ instances/<name>/                YOUR server (this is the --save-dir). Created b
   server_privilege.sprv          created once from template + admins.local; roles/bans change at runtime
   password.local                 server password
   admins.local                   admin SteamID64s, one per line
-ui/                              settings page (index.html, vendored VisualAssault theme)
+  remote.json                    remote access: on/off, your Tailscale name, ports (optional, see Remote control)
+  remote-password.local          the remote access password, as a salted hash (optional)
+  activity-log.jsonl             who changed what, newest 1000 entries (optional)
+ui/                              settings page (index.html), its sign-in page for remote visitors (login.html), vendored VisualAssault theme
 server/  steamcmd/               the game and SteamCMD, recreated by install.ps1 (not tracked)
 steam-user.local                 your Steam account name (not tracked)
 ```
@@ -277,6 +280,45 @@ Things to know:
 To open it from Hardpoint, add a mount that runs `powershell scripts\ui.ps1` from this folder with the Open URL
 `http://127.0.0.1:30180`. Restart it after updating these scripts.
 
+### Remote control (let other people manage the server)
+The settings page normally answers only on this PC (`127.0.0.1`), with no login. To let people you trust manage the server from their
+own PC or phone, use **Tailscale**: a free private network (WireGuard-based) that needs no router changes. Players still join the
+game through your router as before; only the control page goes over Tailscale. Nothing about it is stored in git: your Tailscale
+name, the password and the activity log live in your instance folder (`instances/<name>/`, see [Layout](#layout)).
+
+1. **Install Tailscale** on this PC (tailscale.com/download) and sign in. In Tailscale's admin console (DNS page), make sure
+   **MagicDNS** and **HTTPS Certificates** are on: Serve needs them for its `https://` address.
+2. On the page, open **Remote access**:
+   1. Set a **password** (one shared password, 8+ characters; only a salted hash is kept).
+   2. Click **Detect from Tailscale** to fill in this PC's Tailscale name, tick **Remote access is on** and **Save**.
+   3. Click **Turn on Serve**. That runs `tailscale serve --bg --https=443 http://127.0.0.1:30181`, which forwards your Tailscale name to a
+      second, password-protected copy of the page. (If it says access is denied, run that command in an administrator terminal.)
+3. **Limit what invited people can reach.** Sharing a machine gives access to every port on it unless your access rules say otherwise,
+   so this step matters. In the admin console, under **Access controls**, replace the default allow-everything rule: you keep full
+   access, and shared people get only the Serve port on this PC. The page's step 4 shows the exact line for your PC:
+   ```json
+   "grants": [
+     { "src": ["autogroup:member"], "dst": ["*"], "ip": ["*"] },
+     { "src": ["autogroup:shared"], "dst": ["<this PC's 100.x.y.z address>"], "ip": ["tcp:443"] }
+   ]
+   ```
+   A test in the same file (`"tests": [{ "src": "friend@example.com", "accept": ["<address>:443"], "deny": ["<address>:3389"] }]`)
+   makes the console refuse a policy that does not do this. A test's `src` must be a real account's email, not a group.
+4. **Invite people.** On the admin console's **Machines** page, use **Share…** on this PC and invite them by email (avoid the reusable
+   link). They install Tailscale, accept the invite, and open `https://<this PC's Tailscale name>`. They type their **name** and the
+   shared **password**.
+
+What a signed-in remote visitor can do: everything on the page (settings, rotation, cups, the server password, start, stop, Apply
+now) except what only makes sense on this PC: updating the app or the game server, the Steam account name, and the Remote access tab
+itself. The **Activity** tab lists who changed what (name as typed, plus the Tailscale account Serve reports, when it does); it records
+the action only, never the content. Five wrong passwords in ten minutes lock sign-in for everyone for a while. Sessions end after 12
+idle hours, when someone clicks **Sign out**, when the password changes, or when the page restarts.
+
+How it is built, in case you want to check it: with remote access on, the program opens a **second** listener on `127.0.0.1:30181`
+only (never on a network address, so no firewall rule is involved) that requires the login; Tailscale Serve is the only thing that
+forwards to it, and the original `127.0.0.1:30180` page (no login, this PC only) is not exposed. The page runs only while its window
+is open (`Start.cmd`), so remote visitors need it running on the host PC.
+
 ## Networking
 1. Set a static IP for the host PC in your router (DHCP reservation).
 2. Forward **UDP 30100** (external and internal) to that IP.
@@ -291,6 +333,9 @@ a matching forward and firewall rule. Forward only the game port, and avoid DMZ 
   not expose the rest of the PC. The server process is still the attack surface, and it runs as your user.
 - The server password only gates joining the lobby. Admin powers come from the privilege file.
 - Use a unique password and don't reuse it elsewhere. It sits in plain text in `password.local`.
+- The settings page can change and start/stop your server. It answers only on `127.0.0.1` unless you switch on
+  [remote control](#remote-control-let-other-people-manage-the-server); then it is behind a password and Tailscale, and
+  your Tailscale access rules should limit invited people to that one port.
 - The server is listed publicly, so anyone can see its name. Joining needs the password.
 - Keep the server updated with `update.ps1` and run it only when needed. For more isolation, run it
   under a separate low-privilege Windows account or on a separate machine.

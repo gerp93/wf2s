@@ -16,6 +16,12 @@ What is not built or not verified yet. See [docs/distribution-plan.md](docs/dist
   clicked through it by hand: the wizard pages, the "Set up my server now" start, the SmartScreen "Unknown publisher" prompt (it is not
   code-signed), and switching an existing zip install over to it.
 
+- **Remote control** (README "Remote control") is tested end to end on this PC against the second listener (sign-in, sessions, lockout,
+  host-only endpoints, activity log), but not over a real tailnet with a second person. Not verified: `tailscale serve` run from the
+  page's button (it may need an administrator terminal on Windows), the Serve HTTPS name working for a person the PC was shared with,
+  whether Serve forwards `Tailscale-User-Login` and `X-Forwarded-Proto` (both are optional extras), and the `autogroup:shared` grant
+  plus a `tests` entry actually limiting an invited person to the one port.
+
 ## Decisions still open
 - Can the "Wreckfest 2 Dedicated Server" tool be installed from a Steam library (Library > Tools, or `steam://install/3519390`) on a PC
   that owns the game? If yes, setup could use that copy and skip the SteamCMD login. Needs a setting for the server folder (the scripts
@@ -24,5 +30,6 @@ What is not built or not verified yet. See [docs/distribution-plan.md](docs/dist
 - Screenshots in the README quick start.
 
 ## Later
-- Remote editing from other PCs (separate project): Tailscale node sharing, a "listen on" setting, per-person keys with roles, a change log.
+- Remote control, next steps: per-person accounts or roles (today: one shared password plus a typed name), and starting the settings page
+  with Windows so remote visitors can still reach it after a reboot (today it runs only while its `Start.cmd` window is open).
 - Move this repo onto the KVG_Standards release pipeline if a PowerShell-zip variant is added there.
